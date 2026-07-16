@@ -1,33 +1,75 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
+import os
+import asyncio
 
-app = FastAPI()
-connections = []
+app = FastAPI(title="AGRA Mission Control")
+
+# Track all connected WebSocket clients
+connections: list[WebSocket] = []
+
+# ── Routes ──
 
 @app.get("/")
-async def get_index():
-    return HTMLResponse("<h1>Dashboards</h1><a href='/broadcaster'>1. iPhone Broadcaster</a><br><br><a href='/viewer'>2. Laptop Viewer</a>")
+async def dashboard():
+    """Serve the main mission control dashboard (laptop viewer)."""
+    filepath = os.path.join(os.path.dirname(__file__), "dashboard.html")
+    with open(filepath, "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
+
 
 @app.get("/broadcaster")
-async def get_broadcaster():
-    with open("broadcaster.html", "r") as f:
+async def broadcaster():
+    """Serve the iPhone broadcaster page."""
+    filepath = os.path.join(os.path.dirname(__file__), "broadcaster.html")
+    with open(filepath, "r", encoding="utf-8") as f:
         return HTMLResponse(f.read())
 
-@app.get("/viewer")
-async def get_viewer():
-    with open("viewer.html", "r") as f:
-        return HTMLResponse(f.read())
+
+@app.get("/health")
+async def health():
+    """Health check endpoint."""
+    return {"status": "ok", "connections": len(connections)}
+
+
+# ── WebSocket Signaling Server ──
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    """
+    WebRTC signaling relay.
+    
+    Relays SDP offers/answers and ICE candidates between
+    the iPhone broadcaster and the laptop dashboard viewer.
+    Supports keepalive pings to prevent connection drops.
+    """
     await websocket.accept()
     connections.append(websocket)
+    print(f"[WS] Client connected. Total: {len(connections)}")
+
     try:
         while True:
             data = await websocket.receive_text()
-            # Relay signaling messages to the other peer
+
+            # Relay signaling messages to all OTHER connected peers
+            disconnected = []
             for conn in connections:
                 if conn != websocket:
-                    await conn.send_text(data)
+                    try:
+                        await conn.send_text(data)
+                    except Exception:
+                        disconnected.append(conn)
+
+            # Clean up any dead connections
+            for conn in disconnected:
+                if conn in connections:
+                    connections.remove(conn)
+
     except WebSocketDisconnect:
-        connections.remove(websocket)
+        if websocket in connections:
+            connections.remove(websocket)
+        print(f"[WS] Client disconnected. Total: {len(connections)}")
+    except Exception as e:
+        if websocket in connections:
+            connections.remove(websocket)
+        print(f"[WS] Error: {e}. Total: {len(connections)}")

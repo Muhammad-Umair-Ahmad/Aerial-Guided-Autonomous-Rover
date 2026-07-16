@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGRA — Mission Control</title>
+    <meta name="description" content="Aerial-Guided Rover Autonomy — Real-time Mission Control Dashboard">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.7);
+            --border-color: rgba(56, 189, 248, 0.12);
+            --border-glow: rgba(56, 189, 248, 0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #475569;
+            --accent-cyan: #38bdf8;
+            --accent-teal: #2dd4bf;
+            --accent-green: #4ade80;
+            --accent-orange: #fb923c;
+            --accent-red: #f87171;
+            --accent-purple: #a78bfa;
+            --glass-border: rgba(56, 189, 248, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 10%, rgba(56, 189, 248, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 90%, rgba(45, 212, 191, 0.04) 0%, transparent 60%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(56, 189, 248, 0.008) 2px, rgba(56, 189, 248, 0.008) 4px);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ── TOP NAV ── */
+        .topnav {
+            position: sticky; top: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; height: 44px;
+            background: rgba(10, 14, 23, 0.85);
+            backdrop-filter: blur(20px) saturate(1.5);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .topnav-brand { display: flex; align-items: center; gap: 12px; }
+
+        .topnav-logo {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-teal));
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 14px; color: var(--bg-primary);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+        }
+
+        .topnav-title {
+            font-weight: 700; font-size: 15px; letter-spacing: 2px; text-transform: uppercase;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        .topnav-subtitle { font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px; }
+
+        .topnav-status { display: flex; align-items: center; gap: 20px; }
+
+        .status-chip {
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 12px; border-radius: 20px;
+            background: rgba(15, 23, 42, 0.8); border: 1px solid var(--glass-border);
+            font-size: 12px; font-weight: 500; color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        .status-dot.offline { background: var(--accent-red); box-shadow: 0 0 8px rgba(248,113,113,0.6); animation: none; }
+        .status-dot.connecting { background: var(--accent-orange); box-shadow: 0 0 8px rgba(251,146,60,0.6); animation: pulse-dot 0.8s ease-in-out infinite; }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+
+        .topnav-time { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); }
+
+        /* ── MAIN LAYOUT ── */
+        .main-grid {
+            position: relative; z-index: 1;
+            display: grid; grid-template-columns: 1fr 280px; gap: 10px;
+            padding: 10px 12px; margin: 0 auto;
+            height: calc(100vh - 44px);
+            overflow: hidden;
+        }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px) saturate(1.3);
+            border: 1px solid var(--border-color);
+            border-radius: 12px; overflow: hidden;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover { border-color: var(--border-glow); box-shadow: 0 0 30px rgba(56, 189, 248, 0.05); }
+
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 12px; border-bottom: 1px solid var(--glass-border);
+        }
+        .card-header-left { display: flex; align-items: center; gap: 10px; }
+
+        .card-icon {
+            width: 22px; height: 22px; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;
+        }
+        .card-icon.feed { background: rgba(56, 189, 248, 0.12); color: var(--accent-cyan); }
+        .card-icon.telemetry { background: rgba(45, 212, 191, 0.12); color: var(--accent-teal); }
+        .card-icon.controls { background: rgba(167, 139, 250, 0.12); color: var(--accent-purple); }
+        .card-icon.system { background: rgba(251, 146, 60, 0.12); color: var(--accent-orange); }
+
+        .card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-secondary); }
+
+        .card-badge {
+            padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px; font-family: 'JetBrains Mono', monospace;
+        }
+        .badge-live { background: rgba(74, 222, 128, 0.12); color: var(--accent-green); border: 1px solid rgba(74, 222, 128, 0.2); }
+        .badge-offline { background: rgba(248, 113, 113, 0.12); color: var(--accent-red); border: 1px solid rgba(248, 113, 113, 0.2); }
+        .badge-waiting { background: rgba(251, 146, 60, 0.12); color: var(--accent-orange); border: 1px solid rgba(251, 146, 60, 0.2); }
+
+        /* ── VIDEO FEED ── */
+        .feed-area { grid-column: 1; grid-row: 1 / 3; display: flex; flex-direction: column; min-height: 0; }
+
+        .video-container {
+            position: relative; flex: 1; background: #000;
+            display: flex; align-items: center; justify-content: center; min-height: 0;
+        }
+        .video-container video { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+        .video-overlay-tl, .video-overlay-tr, .video-overlay-bl, .video-overlay-br {
+            position: absolute; width: 40px; height: 40px; pointer-events: none;
+        }
+        .video-overlay-tl { top: 12px; left: 12px; border-top: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
+        .video-overlay-tr { top: 12px; right: 12px; border-top: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
+        .video-overlay-bl { bottom: 12px; left: 12px; border-bottom: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
+        .video-overlay-br { bottom: 12px; right: 12px; border-bottom: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
+
+        .video-hud-top {
+            position: absolute; top: 16px; left: 56px; right: 56px;
+            display: flex; justify-content: space-between; pointer-events: none;
+        }
+        .video-hud-bottom {
+            position: absolute; bottom: 16px; left: 56px; right: 56px;
+            display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none;
+        }
+
+        .hud-tag {
+            font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500;
+            color: var(--accent-cyan); background: rgba(0, 0, 0, 0.6);
+            padding: 3px 8px; border-radius: 4px; letter-spacing: 0.5px;
+        }
+        .hud-tag.rec { color: var(--accent-red); display: flex; align-items: center; gap: 5px; }
+        .hud-tag.rec::before {
+            content: ''; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent-red); animation: pulse-dot 1s ease-in-out infinite;
+        }
+
+        /* ── Waiting state ── */
+        .feed-empty {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 16px; color: var(--text-muted); padding: 40px;
+        }
+
+        .feed-empty-icon {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(56, 189, 248, 0.06);
+            border: 2px dashed rgba(56, 189, 248, 0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 32px;
+        }
+
+        .waiting-spinner {
+            animation: spin-slow 3s linear infinite;
+        }
+
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .feed-empty h3 { font-size: 16px; font-weight: 600; color: var(--text-secondary); }
+        .feed-empty p { font-size: 13px; color: var(--text-muted); max-width: 340px; text-align: center; line-height: 1.6; }
+
+        .feed-empty .step-list {
+            text-align: left; font-size: 12px; line-height: 2; color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .feed-empty .step-list span { color: var(--accent-cyan); }
+
+        /* ── SIDEBAR ── */
+        .sidebar { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; }
+
+        /* ── TELEMETRY ── */
+        .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--glass-border); }
+
+        .telemetry-cell { background: var(--bg-card); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+
+        .telemetry-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+
+        .telemetry-value { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+        .telemetry-value.cyan { color: var(--accent-cyan); }
+        .telemetry-value.green { color: var(--accent-green); }
+        .telemetry-value.orange { color: var(--accent-orange); }
+        .telemetry-value.teal { color: var(--accent-teal); }
+
+        /* ── CONNECTION INFO ── */
+        .conn-info { padding: 8px 12px; }
+
+        .conn-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .conn-row:last-child { border-bottom: none; }
+
+        .conn-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+
+        .conn-value {
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            color: var(--text-secondary); font-weight: 500;
+        }
+        .conn-value.connected { color: var(--accent-green); }
+        .conn-value.waiting { color: var(--accent-orange); }
+        .conn-value.error { color: var(--accent-red); }
+
+        /* ── FEED SOURCE ── */
+        .source-selector { padding: 8px 12px; }
+
+        .source-option {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 10px; border-radius: 8px;
+            border: 1px solid var(--glass-border); background: transparent;
+            cursor: pointer; transition: all 0.2s ease;
+            margin-bottom: 6px; width: 100%; text-align: left;
+            font-family: 'Inter', sans-serif; color: var(--text-primary);
+        }
+        .source-option:hover { background: rgba(56, 189, 248, 0.04); border-color: rgba(56, 189, 248, 0.2); }
+        .source-option.active { background: rgba(56, 189, 248, 0.08); border-color: var(--accent-cyan); box-shadow: 0 0 20px rgba(56, 189, 248, 0.08); }
+        .source-option.disabled { opacity: 0.35; pointer-events: none; }
+
+        .source-radio {
+            width: 16px; height: 16px; border-radius: 50%;
+            border: 2px solid var(--text-muted); flex-shrink: 0;
+            position: relative; transition: all 0.2s ease;
+        }
+        .source-option.active .source-radio { border-color: var(--accent-cyan); }
+        .source-option.active .source-radio::after {
+            content: ''; position: absolute; top: 3px; left: 3px;
+            width: 6px; height: 6px; border-radius: 50%; background: var(--accent-cyan);
+        }
+
+        .source-info h4 { font-size: 12px; font-weight: 600; margin-bottom: 1px; }
+        .source-info p { font-size: 10px; color: var(--text-muted); }
+
+        /* ── LOG ── */
+        .log-container { padding: 6px 10px; flex: 1; overflow-y: auto; min-height: 0; }
+        .log-container::-webkit-scrollbar { width: 4px; }
+        .log-container::-webkit-scrollbar-track { background: transparent; }
+        .log-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+        .log-entry {
+            display: flex; gap: 6px; padding: 3px 0;
+            font-family: 'JetBrains Mono', monospace; font-size: 10px; line-height: 1.3;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            animation: fadeInLog 0.3s ease;
+        }
+        @keyframes fadeInLog {
+            from { opacity: 0; transform: translateX(-8px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-time { color: var(--text-muted); flex-shrink: 0; }
+        .log-msg { color: var(--text-secondary); }
+        .log-msg.success { color: var(--accent-green); }
+        .log-msg.error { color: var(--accent-red); }
+        .log-msg.info { color: var(--accent-cyan); }
+        .log-msg.warn { color: var(--accent-orange); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+            .main-grid { grid-template-columns: 1fr; height: auto; overflow: auto; }
+            .feed-area { grid-column: 1; grid-row: 1; }
+            .sidebar { grid-column: 1; grid-row: 2; }
+            .video-container { min-height: 280px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── TOP NAV ── -->
+    <nav class="topnav">
+        <div class="topnav-brand">
+            <div class="topnav-logo">AG</div>
+            <div>
+                <div class="topnav-title">AGRA Mission Control</div>
+                <div class="topnav-subtitle">Aerial-Guided Rover Autonomy</div>
+            </div>
+        </div>
+        <div class="topnav-status">
+            <div class="status-chip">
+                <div class="status-dot offline" id="statusDot"></div>
+                <span id="statusText">STANDBY</span>
+            </div>
+            <div class="topnav-time" id="navClock">--:--:--</div>
+        </div>
+    </nav>
+
+    <!-- ── MAIN GRID ── -->
+    <main class="main-grid">
+
+        <!-- ── VIDEO FEED ── -->
+        <section class="card feed-area" id="feedCard">
+            <div class="card-header">
+                <div class="card-header-left">
+                    <div class="card-icon feed">📡</div>
+                    <span class="card-title" id="feedTitle">iPhone Camera Feed</span>
+                </div>
+                <span class="card-badge badge-offline" id="feedBadge">OFFLINE</span>
+            </div>
+            <div class="video-container" id="videoContainer">
+                <div class="video-overlay-tl"></div>
+                <div class="video-overlay-tr"></div>
+                <div class="video-overlay-bl"></div>
+                <div class="video-overlay-br"></div>
+
+                <div class="video-hud-top">
+                    <span class="hud-tag" id="hudRes">-- × --</span>
+                    <span class="hud-tag rec" id="hudRec" style="display:none;">LIVE</span>
+                </div>
+                <div class="video-hud-bottom">
+                    <span class="hud-tag" id="hudSource">SRC: AWAITING</span>
+                    <span class="hud-tag" id="hudFps">-- FPS</span>
+                </div>
+
+                <video id="videoPlayer" autoplay playsinline style="display:none;"></video>
+
+                <!-- Waiting for iPhone state -->
+                <div class="feed-empty" id="feedEmpty">
+                    <div class="feed-empty-icon waiting-spinner">📱</div>
+                    <h3>Waiting for iPhone Feed</h3>
+                    <p>Open the broadcaster page on your iPhone and tap <strong>Start Broadcast</strong></p>
+                    <div class="step-list">
+                        <span>1.</span> Connect iPhone to same WiFi<br>
+                        <span>2.</span> Open <span id="broadcasterUrl">https://&lt;server-ip&gt;/broadcaster</span><br>
+                        <span>3.</span> Tap "Start Broadcast"
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar">
+
+            <!-- ── TELEMETRY ── -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon telemetry">📊</div>
+                        <span class="card-title">Feed Telemetry</span>
+                    </div>
+                </div>
+                <div class="telemetry-grid">
+                    <div class="telemetry-cell">
+                        <span class="telemetry-label">FPS</span>
+                        <span class="telemetry-value cyan" id="telFps">--</span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="telemetry-label">Resolution</span>
+                        <span class="telemetry-value green" id="telRes">--</span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="telemetry-label">Uptime</span>
+                        <span class="telemetry-value orange" id="telUptime">00:00</span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="telemetry-label">Frames</span>
+                        <span class="telemetry-value teal" id="telFrames">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── CONNECTION STATUS ── -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon system">⚙️</div>
+                        <span class="card-title">Connection</span>
+                    </div>
+                </div>
+                <div class="conn-info">
+                    <div class="conn-row">
+                        <span class="conn-label">WebSocket</span>
+                        <span class="conn-value waiting" id="connWs">Connecting…</span>
+                    </div>
+                    <div class="conn-row">
+                        <span class="conn-label">WebRTC</span>
+                        <span class="conn-value waiting" id="connRtc">Waiting</span>
+                    </div>
+                    <div class="conn-row">
+                        <span class="conn-label">iPhone</span>
+                        <span class="conn-value waiting" id="connPhone">Not detected</span>
+                    </div>
+                    <div class="conn-row">
+                        <span class="conn-label">ICE State</span>
+                        <span class="conn-value" id="connIce">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── FEED SOURCES ── -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon controls">🎛️</div>
+                        <span class="card-title">Feed Sources</span>
+                    </div>
+                </div>
+                <div class="source-selector">
+                    <button class="source-option active" id="srcPhone">
+                        <div class="source-radio"></div>
+                        <div class="source-info">
+                            <h4>📱 iPhone Camera</h4>
+                            <p>WebRTC stream via signaling server</p>
+                        </div>
+                    </button>
+                    <button class="source-option disabled" id="srcSatellite">
+                        <div class="source-radio"></div>
+                        <div class="source-info">
+                            <h4>🛰️ Satellite View</h4>
+                            <p>Coming soon — overhead iPhone</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── LOG ── -->
+            <div class="card" style="flex:1; display:flex; flex-direction:column;">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon feed">📋</div>
+                        <span class="card-title">System Log</span>
+                    </div>
+                </div>
+                <div class="log-container" id="logContainer"></div>
+            </div>
+
+        </aside>
+    </main>
+
+    <script>
+        // ══════════════════════════════════════════════════
+        //  STATE
+        // ══════════════════════════════════════════════════
+        let peerConnection = null;
+        let ws = null;
+        let feedActive = false;
+        let totalFrames = 0;
+        let feedStartTime = null;
+        let animFrameId = null;
+        let wsReconnectTimer = null;
+
+        const ICE_SERVERS = [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "stun:stun2.l.google.com:19302" },
+            { urls: "stun:stun3.l.google.com:19302" }
+        ];
+
+        // ── Elements ──
+        const video = document.getElementById('videoPlayer');
+        const feedEmpty = document.getElementById('feedEmpty');
+        const feedBadge = document.getElementById('feedBadge');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const hudRes = document.getElementById('hudRes');
+        const hudFps = document.getElementById('hudFps');
+        const hudRec = document.getElementById('hudRec');
+        const hudSource = document.getElementById('hudSource');
+        const telFps = document.getElementById('telFps');
+        const telRes = document.getElementById('telRes');
+        const telUptime = document.getElementById('telUptime');
+        const telFrames = document.getElementById('telFrames');
+        const connWs = document.getElementById('connWs');
+        const connRtc = document.getElementById('connRtc');
+        const connPhone = document.getElementById('connPhone');
+        const connIce = document.getElementById('connIce');
+
+        // ══════════════════════════════════════════════════
+        //  CLOCK
+        // ══════════════════════════════════════════════════
+        function updateClock() {
+            document.getElementById('navClock').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
+            requestAnimationFrame(updateClock);
+        }
+        updateClock();
+
+        // Show broadcaster URL
+        document.getElementById('broadcasterUrl').textContent = `https://${window.location.host}/broadcaster`;
+
+        // ══════════════════════════════════════════════════
+        //  LOGGING
+        // ══════════════════════════════════════════════════
+        function log(msg, type = '') {
+            const container = document.getElementById('logContainer');
+            const now = new Date().toLocaleTimeString('en-US', { hour12: false });
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-time">${now}</span><span class="log-msg ${type}">${msg}</span>`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+            while (container.children.length > 50) container.removeChild(container.firstChild);
+        }
+
+        // ══════════════════════════════════════════════════
+        //  STATUS HELPERS
+        // ══════════════════════════════════════════════════
+        function setStatus(state, text) {
+            statusDot.className = 'status-dot';
+            if (state === 'offline') statusDot.classList.add('offline');
+            else if (state === 'connecting') statusDot.classList.add('connecting');
+            statusText.textContent = text;
+        }
+
+        function setConnValue(el, text, cls) {
+            el.textContent = text;
+            el.className = 'conn-value ' + (cls || '');
+        }
+
+        // ══════════════════════════════════════════════════
+        //  WEBSOCKET — auto-connect + auto-reconnect
+        // ══════════════════════════════════════════════════
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            log(`Connecting to signaling server...`, 'info');
+            setStatus('connecting', 'CONNECTING');
+            setConnValue(connWs, 'Connecting…', 'waiting');
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                log('WebSocket connected to signaling server', 'success');
+                setConnValue(connWs, 'Connected', 'connected');
+                setStatus('connecting', 'WAITING FOR IPHONE');
+                setConnValue(connPhone, 'Waiting…', 'waiting');
+                if (wsReconnectTimer) {
+                    clearTimeout(wsReconnectTimer);
+                    wsReconnectTimer = null;
+                }
+            };
+
+            ws.onmessage = async (msg) => {
+                try {
+                    const data = JSON.parse(msg.data);
+
+                    if (data.offer) {
+                        // iPhone sent an offer — it's broadcasting!
+                        log('iPhone offer received — negotiating stream…', 'info');
+                        setConnValue(connPhone, 'Detected!', 'connected');
+                        setConnValue(connRtc, 'Negotiating…', 'waiting');
+
+                        // Clean up old connection if any
+                        if (peerConnection) {
+                            peerConnection.close();
+                            peerConnection = null;
+                        }
+
+                        peerConnection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+                        // Tell WebRTC we want to receive video
+                        peerConnection.addTransceiver('video', { direction: 'recvonly' });
+
+                        // When we receive the video track
+                        peerConnection.ontrack = (e) => {
+                            log('Video track received from iPhone!', 'success');
+                            log(`Track kind: ${e.track.kind}, streams: ${e.streams.length}`, 'info');
+
+                            // Use the stream if available, otherwise create one from the track
+                            let stream;
+                            if (e.streams && e.streams[0]) {
+                                stream = e.streams[0];
+                            } else {
+                                stream = new MediaStream([e.track]);
+                            }
+
+                            video.srcObject = stream;
+                            video.style.display = 'block';
+                            feedEmpty.style.display = 'none';
+
+                            // Force play the video
+                            video.play().then(() => {
+                                log('Video playback started', 'success');
+                            }).catch(err => {
+                                log(`Autoplay blocked: ${err.message}`, 'warn');
+                                // Try muted autoplay as fallback
+                                video.muted = true;
+                                video.play().catch(() => {});
+                            });
+
+                            feedActive = true;
+                            feedStartTime = Date.now();
+                            totalFrames = 0;
+
+                            feedBadge.textContent = 'LIVE';
+                            feedBadge.className = 'card-badge badge-live';
+                            hudRec.style.display = 'flex';
+                            hudSource.textContent = 'SRC: iPHONE';
+                            setStatus('online', 'LIVE');
+                            setConnValue(connRtc, 'Connected', 'connected');
+
+                            startFpsMonitor();
+
+                            // Get resolution when video loads
+                            video.onloadedmetadata = () => {
+                                const w = video.videoWidth;
+                                const h = video.videoHeight;
+                                hudRes.textContent = `${w} × ${h}`;
+                                telRes.textContent = `${w}×${h}`;
+                                log(`Stream resolution: ${w}×${h}`, 'info');
+                            };
+                        };
+
+                        // Send ICE candidates back to iPhone
+                        peerConnection.onicecandidate = (e) => {
+                            if (e.candidate && ws.readyState === WebSocket.OPEN) {
+                                ws.send(JSON.stringify({ candidate: e.candidate }));
+                            }
+                        };
+
+                        // Monitor ICE connection state
+                        peerConnection.oniceconnectionstatechange = () => {
+                            const state = peerConnection.iceConnectionState;
+                            setConnValue(connIce, state);
+                            log(`ICE state: ${state}`, state === 'connected' || state === 'completed' ? 'success' : state === 'failed' ? 'error' : 'info');
+
+                            if (state === 'disconnected' || state === 'failed') {
+                                handleStreamLost();
+                            }
+                        };
+
+                        // Set remote description and create answer
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+                        ws.send(JSON.stringify({ answer: answer }));
+
+                        log('Answer sent to iPhone — waiting for stream…', 'info');
+
+                    } else if (data.candidate && peerConnection) {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    }
+                } catch (err) {
+                    log(`Signal error: ${err.message}`, 'error');
+                }
+            };
+
+            ws.onerror = (err) => {
+                log('WebSocket error', 'error');
+                setConnValue(connWs, 'Error', 'error');
+            };
+
+            ws.onclose = () => {
+                log('WebSocket disconnected', 'warn');
+                setConnValue(connWs, 'Disconnected', 'error');
+
+                if (feedActive) handleStreamLost();
+
+                // Auto-reconnect after 3 seconds
+                wsReconnectTimer = setTimeout(() => {
+                    log('Attempting reconnect...', 'info');
+                    connectWebSocket();
+                }, 3000);
+            };
+        }
+
+        // ══════════════════════════════════════════════════
+        //  HANDLE STREAM LOST
+        // ══════════════════════════════════════════════════
+        function handleStreamLost() {
+            feedActive = false;
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+
+            video.style.display = 'none';
+            feedEmpty.style.display = 'flex';
+
+            feedBadge.textContent = 'OFFLINE';
+            feedBadge.className = 'card-badge badge-offline';
+            hudRec.style.display = 'none';
+            hudRes.textContent = '-- × --';
+            hudFps.textContent = '-- FPS';
+            hudSource.textContent = 'SRC: AWAITING';
+            telFps.textContent = '--';
+            telRes.textContent = '--';
+            telUptime.textContent = '00:00';
+            telFrames.textContent = '0';
+
+            setConnValue(connRtc, 'Disconnected', 'error');
+            setConnValue(connPhone, 'Lost', 'error');
+            setStatus('connecting', 'WAITING FOR IPHONE');
+
+            log('iPhone stream lost — waiting for reconnection…', 'warn');
+        }
+
+        // ══════════════════════════════════════════════════
+        //  FPS MONITOR
+        // ══════════════════════════════════════════════════
+        function startFpsMonitor() {
+            let frames = 0;
+            let lastTime = performance.now();
+            let lastDecodedFrames = 0;
+
+            function tick() {
+                if (!feedActive) return;
+
+                // Use requestVideoFrameCallback if available for accurate FPS
+                totalFrames++;
+                frames++;
+                const now = performance.now();
+                const delta = now - lastTime;
+
+                if (delta >= 1000) {
+                    const fps = Math.round((frames * 1000) / delta);
+                    hudFps.textContent = `${fps} FPS`;
+                    telFps.textContent = fps;
+                    telFrames.textContent = totalFrames.toLocaleString();
+
+                    if (fps >= 20) {
+                        telFps.className = 'telemetry-value cyan';
+                    } else if (fps >= 10) {
+                        telFps.className = 'telemetry-value orange';
+                    } else {
+                        telFps.className = 'telemetry-value';
+                        telFps.style.color = 'var(--accent-red)';
+                    }
+
+                    frames = 0;
+                    lastTime = now;
+                }
+
+                // Uptime
+                if (feedStartTime) {
+                    const elapsed = Math.floor((Date.now() - feedStartTime) / 1000);
+                    const hrs = Math.floor(elapsed / 3600);
+                    const mins = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+                    const secs = (elapsed % 60).toString().padStart(2, '0');
+                    telUptime.textContent = hrs > 0 ? `${hrs}:${mins}:${secs}` : `${mins}:${secs}`;
+                }
+
+                animFrameId = requestAnimationFrame(tick);
+            }
+
+            animFrameId = requestAnimationFrame(tick);
+        }
+
+        // ══════════════════════════════════════════════════
+        //  INIT — auto connect on page load
+        // ══════════════════════════════════════════════════
+        log('Dashboard initialized', 'info');
+        log('AGRA Mission Control v1.0', 'info');
+        setStatus('offline', 'STANDBY');
+        connectWebSocket();
+    </script>
+
+</body>
+</html>

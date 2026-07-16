@@ -1,68 +1,405 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>iPhone Camera</title>
+    <title>AGRA — iPhone Broadcaster</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; text-align: center; margin: 0; padding: 20px;}
-        video { width: 100%; border-radius: 12px; background: #222; }
-        button { padding: 15px; width: 100%; font-size: 18px; margin-top: 20px; background: #0A84FF; border: none; color: white; border-radius: 12px; font-weight: bold;}
-        #status { margin-top: 15px; color: #30D158; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0e17; color: #f1f5f9;
+            font-family: 'Inter', -apple-system, sans-serif;
+            text-align: center; padding: 16px;
+            min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        video {
+            width: 100%; max-width: 500px;
+            border-radius: 16px; background: #111827;
+            border: 1px solid rgba(56, 189, 248, 0.15);
+        }
+        .title {
+            font-size: 13px; font-weight: 700; letter-spacing: 2px;
+            text-transform: uppercase; margin-bottom: 16px;
+            background: linear-gradient(90deg, #38bdf8, #2dd4bf);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        /* ── Camera Lens Selector ── */
+        .lens-selector {
+            display: flex; gap: 8px; margin-top: 14px;
+            width: 100%; max-width: 500px; justify-content: center;
+            flex-wrap: wrap;
+        }
+        .lens-btn {
+            flex: 1; min-width: 80px;
+            padding: 10px 8px;
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid rgba(56, 189, 248, 0.12);
+            border-radius: 10px;
+            color: #94a3b8; font-family: 'Inter', sans-serif;
+            font-size: 11px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s ease;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 4px;
+        }
+        .lens-btn .lens-icon { font-size: 18px; }
+        .lens-btn .lens-label { font-size: 10px; color: #475569; }
+        .lens-btn:active { transform: scale(0.95); }
+        .lens-btn.active {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+        }
+        .lens-btn.active .lens-label { color: #38bdf8; }
+        .lens-btn:disabled { opacity: 0.25; pointer-events: none; }
+
+        /* ── Start Button ── */
+        .start-btn {
+            padding: 16px 40px; width: 100%; max-width: 500px;
+            font-size: 16px; margin-top: 14px;
+            background: linear-gradient(135deg, #38bdf8, #2dd4bf);
+            border: none; color: #0a0e17; border-radius: 14px;
+            font-weight: 700; font-family: 'Inter', sans-serif;
+            cursor: pointer; letter-spacing: 0.5px;
+            box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
+            transition: all 0.2s ease;
+        }
+        .start-btn:active { transform: scale(0.97); }
+        .start-btn:disabled { opacity: 0.4; cursor: default; }
+
+        #status {
+            margin-top: 14px; font-size: 13px;
+            font-weight: 500; color: #4ade80;
+            min-height: 20px;
+        }
+        #status.error { color: #f87171; }
+        #status.warn { color: #fb923c; }
+        .info {
+            margin-top: 8px; font-size: 11px;
+            color: #475569; line-height: 1.6;
+        }
     </style>
 </head>
 <body>
+    <div class="title">AGRA — iPhone Broadcaster</div>
     <video id="video" autoplay muted playsinline></video>
-    <button id="startBtn">Start Broadcast</button>
-    <div id="status">Ready.</div>
+
+    <!-- Camera Lens Selector -->
+    <div class="lens-selector" id="lensSelector">
+        <button class="lens-btn" disabled>
+            <span class="lens-icon">🔍</span>
+            <span>Detecting...</span>
+            <span class="lens-label">cameras</span>
+        </button>
+    </div>
+
+    <button class="start-btn" id="startBtn">▶ Start Broadcast</button>
+    <div id="status">Ready — tap Start to begin streaming</div>
+    <div class="info" id="info"></div>
 
     <script>
-        const ws = new WebSocket(`wss://${window.location.host}/ws`);
-        let peerConnection;
-        const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+        let peerConnection = null;
+        let ws = null;
+        let localStream = null;
+        let broadcasting = false;
+        let availableCameras = [];
+        let currentDeviceId = null;
 
-        document.getElementById('startBtn').onclick = async () => {
+        const ICE_SERVERS = [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "stun:stun2.l.google.com:19302" },
+            { urls: "stun:stun3.l.google.com:19302" }
+        ];
+
+        const statusEl = document.getElementById('status');
+        const infoEl = document.getElementById('info');
+        const startBtn = document.getElementById('startBtn');
+        const lensSelector = document.getElementById('lensSelector');
+
+        function setStatus(msg, cls = '') {
+            statusEl.textContent = msg;
+            statusEl.className = cls;
+        }
+
+        // ══════════════════════════════════════════════════
+        //  CAMERA DETECTION — Find all available lenses
+        // ══════════════════════════════════════════════════
+        async function detectCameras() {
             try {
-                // Constraints: Targets back camera, caps resolution at 720p 
-                // This keeps bandwidth low for CV modeling while forcing the wide angle
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: { ideal: "environment" },
-                        width: { ideal: 1280, max: 1280 },
-                        height: { ideal: 720, max: 720 },
-                        frameRate: { ideal: 24, max: 30 }
+                // Need to get a stream first to get device labels (browser security)
+                const tempStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "environment" },
+                    audio: false
+                });
+
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+                // Stop temp stream
+                tempStream.getTracks().forEach(t => t.stop());
+
+                availableCameras = videoDevices;
+                renderLensButtons(videoDevices);
+
+                console.log('Detected cameras:', videoDevices.map(d => d.label));
+
+            } catch (err) {
+                console.error('Camera detection failed:', err);
+                setStatus('Camera access needed — tap Start', 'warn');
+            }
+        }
+
+        function getLensInfo(label) {
+            // Map iOS camera labels to friendly names
+            const l = label.toLowerCase();
+
+            if (l.includes('ultra') && l.includes('wide')) {
+                return { icon: '📷', name: '0.5x', label: 'Ultra Wide', sort: 1 };
+            }
+            if (l.includes('wide') && !l.includes('ultra')) {
+                return { icon: '📸', name: '1x', label: 'Wide', sort: 2 };
+            }
+            if (l.includes('telephoto')) {
+                return { icon: '🔭', name: '3x', label: 'Telephoto', sort: 3 };
+            }
+            if (l.includes('front') || l.includes('facetime') || l.includes('truedepth')) {
+                return { icon: '🤳', name: 'Front', label: 'Selfie', sort: 5 };
+            }
+            // Generic back camera (older iPhones with single camera)
+            if (l.includes('back')) {
+                return { icon: '📸', name: '1x', label: 'Main', sort: 2 };
+            }
+            // Fallback
+            return { icon: '📷', name: 'Cam', label: label.substring(0, 12), sort: 4 };
+        }
+
+        function renderLensButtons(cameras) {
+            if (cameras.length === 0) {
+                lensSelector.innerHTML = '<button class="lens-btn" disabled><span>No cameras</span></button>';
+                return;
+            }
+
+            // Sort cameras: Ultra Wide -> Wide -> Telephoto -> Other -> Front
+            const sorted = cameras.map(cam => ({
+                device: cam,
+                info: getLensInfo(cam.label)
+            })).sort((a, b) => a.info.sort - b.info.sort);
+
+            lensSelector.innerHTML = '';
+
+            sorted.forEach((cam, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'lens-btn' + (index === 0 ? '' : '');
+                btn.innerHTML = `
+                    <span class="lens-icon">${cam.info.icon}</span>
+                    <span>${cam.info.name}</span>
+                    <span class="lens-label">${cam.info.label}</span>
+                `;
+                btn.onclick = () => switchCamera(cam.device.deviceId, btn);
+                btn.dataset.deviceId = cam.device.deviceId;
+                lensSelector.appendChild(btn);
+            });
+
+            // Auto-select first back camera (usually Wide/Main)
+            const mainCam = sorted.find(c => c.info.sort === 2) || sorted[0];
+            const mainBtn = lensSelector.querySelector(`[data-device-id="${mainCam.device.deviceId}"]`);
+            if (mainBtn) {
+                mainBtn.classList.add('active');
+                currentDeviceId = mainCam.device.deviceId;
+            }
+        }
+
+        // ══════════════════════════════════════════════════
+        //  SWITCH CAMERA — Hot-swap lens without reconnect
+        // ══════════════════════════════════════════════════
+        async function switchCamera(deviceId, btnEl) {
+            if (deviceId === currentDeviceId && localStream) return;
+
+            // Update button UI
+            lensSelector.querySelectorAll('.lens-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+            currentDeviceId = deviceId;
+
+            try {
+                setStatus('Switching camera...', 'warn');
+
+                // Get new stream from selected camera
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        deviceId: { exact: deviceId },
+                        width: { min: 720, ideal: 1280 },
+                        height: { min: 720, ideal: 1280 },
+                        frameRate: { ideal: 30, max: 60 }
                     },
                     audio: false
                 });
-                
-                document.getElementById('video').srcObject = stream;
-                document.getElementById('status').innerText = "Camera active. Sending...";
 
-                peerConnection = new RTCPeerConnection(config);
-                stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+                // Stop old tracks
+                if (localStream) {
+                    localStream.getTracks().forEach(t => t.stop());
+                }
 
-                peerConnection.onicecandidate = e => {
-                    if (e.candidate) ws.send(JSON.stringify({ candidate: e.candidate }));
-                };
+                localStream = newStream;
+                document.getElementById('video').srcObject = newStream;
 
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                ws.send(JSON.stringify({ offer: offer }));
+                // Update info
+                const track = newStream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                infoEl.textContent = `${track.label} — ${settings.width}×${settings.height} @ ${Math.round(settings.frameRate)}fps`;
+
+                // If already broadcasting, hot-swap the track in the peer connection
+                if (broadcasting && peerConnection) {
+                    const senders = peerConnection.getSenders();
+                    const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+
+                    if (videoSender) {
+                        // replaceTrack swaps the video without renegotiation — instant switch!
+                        await videoSender.replaceTrack(track);
+                        setStatus('🟢 LIVE — Camera switched!');
+                    } else {
+                        // Fallback: full renegotiation
+                        await createAndSendOffer();
+                    }
+                } else {
+                    setStatus('Camera ready — tap Start to broadcast');
+                }
 
             } catch (err) {
-                document.getElementById('status').innerText = "Error: " + err.message;
-                document.getElementById('status').style.color = "#FF453A";
+                setStatus('Switch failed: ' + err.message, 'error');
+                console.error('Camera switch error:', err);
+            }
+        }
+
+        // ══════════════════════════════════════════════════
+        //  WEBSOCKET — auto-connect + auto-reconnect
+        // ══════════════════════════════════════════════════
+        function connectWS() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+            ws.onopen = () => {
+                setStatus('Connected to server — tap Start to broadcast');
+                if (broadcasting && localStream) {
+                    createAndSendOffer();
+                }
+            };
+
+            ws.onmessage = async (msg) => {
+                try {
+                    const data = JSON.parse(msg.data);
+                    if (data.answer && peerConnection) {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                        setStatus('🟢 LIVE — Streaming to dashboard!');
+                    } else if (data.candidate && peerConnection) {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    }
+                } catch (err) {
+                    console.error('Signal error:', err);
+                }
+            };
+
+            ws.onerror = () => setStatus('WebSocket error', 'error');
+
+            ws.onclose = () => {
+                setStatus('Disconnected — reconnecting…', 'warn');
+                setTimeout(connectWS, 3000);
+            };
+        }
+
+        // ══════════════════════════════════════════════════
+        //  WEBRTC — Create and send offer
+        // ══════════════════════════════════════════════════
+        async function createAndSendOffer() {
+            if (peerConnection) {
+                peerConnection.close();
+            }
+
+            peerConnection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            peerConnection.onicecandidate = (e) => {
+                if (e.candidate && ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ candidate: e.candidate }));
+                }
+            };
+
+            peerConnection.oniceconnectionstatechange = () => {
+                const state = peerConnection.iceConnectionState;
+                if (state === 'connected' || state === 'completed') {
+                    setStatus('🟢 LIVE — Streaming to dashboard!');
+                } else if (state === 'disconnected') {
+                    setStatus('Stream interrupted — reconnecting…', 'warn');
+                    setTimeout(() => {
+                        if (broadcasting && localStream) createAndSendOffer();
+                    }, 2000);
+                } else if (state === 'failed') {
+                    setStatus('Connection failed — retrying…', 'error');
+                    setTimeout(() => {
+                        if (broadcasting && localStream) createAndSendOffer();
+                    }, 3000);
+                }
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ offer: offer }));
+                setStatus('Offer sent — waiting for dashboard…', 'warn');
+            }
+        }
+
+        // ══════════════════════════════════════════════════
+        //  START BROADCAST
+        // ══════════════════════════════════════════════════
+        startBtn.onclick = async () => {
+            if (broadcasting) return;
+            startBtn.disabled = true;
+
+            try {
+                setStatus('Requesting camera…', 'warn');
+
+                // Use selected camera or default to back camera
+                const constraints = {
+                    video: currentDeviceId
+                        ? { deviceId: { exact: currentDeviceId }, width: { min: 720, ideal: 1280 }, height: { min: 720, ideal: 1280 }, frameRate: { ideal: 30, max: 60 } }
+                        : { facingMode: { ideal: "environment" }, width: { min: 720, ideal: 1280 }, height: { min: 720, ideal: 1280 }, frameRate: { ideal: 30, max: 60 } },
+                    audio: false
+                };
+
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                document.getElementById('video').srcObject = localStream;
+                broadcasting = true;
+
+                const track = localStream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                infoEl.textContent = `${track.label} — ${settings.width}×${settings.height} @ ${Math.round(settings.frameRate)}fps`;
+
+                setStatus('Camera active — connecting to dashboard…', 'warn');
+                startBtn.textContent = '🟢 Broadcasting…';
+
+                await createAndSendOffer();
+
+            } catch (err) {
+                setStatus('Camera error: ' + err.message, 'error');
+                startBtn.disabled = false;
             }
         };
 
-        ws.onmessage = async (msg) => {
-            const data = JSON.parse(msg.data);
-            if (data.answer) {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                document.getElementById('status').innerText = "Live: Streaming to laptop!";
-            } else if (data.candidate && peerConnection) {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-            }
-        };
+        // ══════════════════════════════════════════════════
+        //  INIT
+        // ══════════════════════════════════════════════════
+        connectWS();
+        detectCameras();
     </script>
 </body>
 </html>
