@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>iPhone Camera</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <style>
+        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; text-align: center; margin: 0; padding: 20px;}
+        video { width: 100%; border-radius: 12px; background: #222; }
+        button { padding: 15px; width: 100%; font-size: 18px; margin-top: 20px; background: #0A84FF; border: none; color: white; border-radius: 12px; font-weight: bold;}
+        #status { margin-top: 15px; color: #30D158; }
+    </style>
+</head>
+<body>
+    <video id="video" autoplay muted playsinline></video>
+    <button id="startBtn">Start Broadcast</button>
+    <div id="status">Ready.</div>
+
+    <script>
+        const ws = new WebSocket(`wss://${window.location.host}/ws`);
+        let peerConnection;
+        const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+        document.getElementById('startBtn').onclick = async () => {
+            try {
+                // Constraints: Targets back camera, caps resolution at 720p 
+                // This keeps bandwidth low for CV modeling while forcing the wide angle
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 1280, max: 1280 },
+                        height: { ideal: 720, max: 720 },
+                        frameRate: { ideal: 24, max: 30 }
+                    },
+                    audio: false
+                });
+                
+                document.getElementById('video').srcObject = stream;
+                document.getElementById('status').innerText = "Camera active. Sending...";
+
+                peerConnection = new RTCPeerConnection(config);
+                stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+                peerConnection.onicecandidate = e => {
+                    if (e.candidate) ws.send(JSON.stringify({ candidate: e.candidate }));
+                };
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                ws.send(JSON.stringify({ offer: offer }));
+
+            } catch (err) {
+                document.getElementById('status').innerText = "Error: " + err.message;
+                document.getElementById('status').style.color = "#FF453A";
+            }
+        };
+
+        ws.onmessage = async (msg) => {
+            const data = JSON.parse(msg.data);
+            if (data.answer) {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                document.getElementById('status').innerText = "Live: Streaming to laptop!";
+            } else if (data.candidate && peerConnection) {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        };
+    </script>
+</body>
+</html>
