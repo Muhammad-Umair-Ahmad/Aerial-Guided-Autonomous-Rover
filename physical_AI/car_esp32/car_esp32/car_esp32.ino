@@ -4,8 +4,8 @@
 // ============================================================
 //  WIFI SETTINGS
 // ============================================================
-const char* WIFI_SSID = "Muhammad's iphone";
-const char* WIFI_PASS = "jaffar12";
+const char* WIFI_SSID = "laptop";
+const char* WIFI_PASS = "12345678";
 
 WebServer server(80);
 
