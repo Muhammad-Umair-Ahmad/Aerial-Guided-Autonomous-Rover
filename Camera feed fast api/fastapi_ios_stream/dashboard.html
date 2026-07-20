@@ -314,6 +314,14 @@
         .log-msg.info { color: var(--accent-cyan); }
         .log-msg.warn { color: var(--accent-orange); }
 
+        /* ── TOGGLE SWITCH ── */
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-primary); border: 1px solid var(--text-muted); transition: .3s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: var(--text-muted); transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: rgba(56, 189, 248, 0.2); border-color: var(--accent-cyan); }
+        input:checked + .slider:before { transform: translateX(16px); background-color: var(--accent-cyan); }
+
         /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
             .main-grid { grid-template-columns: 1fr; height: auto; overflow: auto; }
@@ -370,7 +378,8 @@
                     <span class="hud-tag" id="hudFps">-- FPS</span>
                 </div>
 
-                <video id="videoPlayer" autoplay playsinline style="display:none;"></video>
+                <video id="videoPlayer" autoplay playsinline style="display:none; transform: translateZ(0);"></video>
+                <canvas id="overlayCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; transform: translateZ(0); background: transparent;"></canvas>
 
                 <!-- Waiting for iPhone state -->
                 <div class="feed-empty" id="feedEmpty">
@@ -441,6 +450,32 @@
                     <div class="conn-row">
                         <span class="conn-label">ICE State</span>
                         <span class="conn-value" id="connIce">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── AI VISION ── -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon system">🧠</div>
+                        <span class="card-title">AI Vision Model</span>
+                    </div>
+                </div>
+                <div class="conn-info" style="padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span class="conn-label">Enable Object Detection</span>
+                        <label class="switch">
+                            <input type="checkbox" id="aiToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                            <span class="conn-label">Confidence Threshold</span>
+                            <span class="conn-value" id="aiThreshLabel">50%</span>
+                        </div>
+                        <input type="range" id="aiThreshold" min="0" max="100" value="50" style="width: 100%; cursor: pointer;">
                     </div>
                 </div>
             </div>
@@ -522,6 +557,17 @@
         const connRtc = document.getElementById('connRtc');
         const connPhone = document.getElementById('connPhone');
         const connIce = document.getElementById('connIce');
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const ctx = overlayCanvas.getContext('2d');
+        const aiToggle = document.getElementById('aiToggle');
+        const aiThreshold = document.getElementById('aiThreshold');
+        const aiThreshLabel = document.getElementById('aiThreshLabel');
+
+        let cvWs = null;
+        let aiEnabled = false;
+        let lastFrameTime = 0;
+        let cvDetections = [];
+        let cvOriginalSize = null;
 
         // ══════════════════════════════════════════════════
         //  CLOCK
@@ -792,12 +838,164 @@
         }
 
         // ══════════════════════════════════════════════════
+        //  AI VISION / CV PIPELINE
+        // ══════════════════════════════════════════════════
+        aiThreshold.oninput = (e) => {
+            aiThreshLabel.textContent = `${e.target.value}%`;
+        };
+
+        aiToggle.onchange = (e) => {
+            aiEnabled = e.target.checked;
+            if (aiEnabled) {
+                log('AI Vision Model enabled', 'info');
+                connectCVWebSocket();
+            } else {
+                log('AI Vision Model disabled', 'warn');
+                if (cvWs) {
+                    cvWs.close();
+                    cvWs = null;
+                }
+                ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                cvDetections = [];
+            }
+        };
+
+        function connectCVWebSocket() {
+            if (cvWs) return;
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            cvWs = new WebSocket(`${protocol}//${window.location.host}/ws/cv`);
+
+            cvWs.onopen = () => {
+                log('Connected to AI processing backend', 'success');
+            };
+
+            cvWs.onmessage = (msg) => {
+                try {
+                    const data = JSON.parse(msg.data);
+                    if (data.error) {
+                        console.error('CV Error:', data.error);
+                    } else if (data.detections) {
+                        cvDetections = data.detections;
+                        cvOriginalSize = data.original_size;
+                    }
+                } catch (e) {
+                    console.error('Error parsing CV response', e);
+                }
+            };
+
+            cvWs.onclose = () => {
+                cvWs = null;
+                if (aiEnabled) {
+                    setTimeout(connectCVWebSocket, 3000);
+                }
+            };
+        }
+
+        function captureAndSendFrame() {
+            if (!aiEnabled || !cvWs || cvWs.readyState !== WebSocket.OPEN || !feedActive) return;
+
+            const now = performance.now();
+            // Send at roughly 5 FPS (200ms) to avoid overloading
+            if (now - lastFrameTime < 200) return;
+            lastFrameTime = now;
+
+            try {
+                // Use a smaller internal canvas to compress before sending
+                const tempCanvas = document.createElement('canvas');
+                const scale = 0.5; // Scale down for faster transport
+                tempCanvas.width = video.videoWidth * scale;
+                tempCanvas.height = video.videoHeight * scale;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // JPEG compression
+                const b64 = tempCanvas.toDataURL('image/jpeg', 0.6);
+                
+                const threshold = parseInt(aiThreshold.value) / 100.0;
+                cvWs.send(JSON.stringify({ image: b64, threshold: threshold }));
+            } catch (e) {
+                console.error("Frame capture error:", e);
+            }
+        }
+
+        function drawDetections() {
+            // Resize canvas to match video actual displayed size
+            overlayCanvas.width = video.clientWidth;
+            overlayCanvas.height = video.clientHeight;
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            if (!aiEnabled || cvDetections.length === 0 || !cvOriginalSize || !feedActive) return;
+
+            // Calculate scale factors (video might be letterboxed/pillarboxed due to object-fit: contain)
+            const videoRatio = video.videoWidth / video.videoHeight;
+            const containerRatio = video.clientWidth / video.clientHeight;
+            
+            let drawWidth = video.clientWidth;
+            let drawHeight = video.clientHeight;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            if (videoRatio > containerRatio) {
+                drawHeight = video.clientWidth / videoRatio;
+                offsetY = (video.clientHeight - drawHeight) / 2;
+            } else {
+                drawWidth = video.clientHeight * videoRatio;
+                offsetX = (video.clientWidth - drawWidth) / 2;
+            }
+
+            const scaleX = drawWidth / cvOriginalSize.width;
+            const scaleY = drawHeight / cvOriginalSize.height;
+
+            cvDetections.forEach(d => {
+                const x = offsetX + (d.box.x * scaleX);
+                const y = offsetY + (d.box.y * scaleY);
+                const w = d.box.width * scaleX;
+                const h = d.box.height * scaleY;
+                
+                const colorStr = `rgb(${d.color[0]}, ${d.color[1]}, ${d.color[2]})`;
+                const colorBg = `rgba(${d.color[0]}, ${d.color[1]}, ${d.color[2]}, 0.8)`;
+
+                // Draw bounding box
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = colorStr;
+                ctx.strokeRect(x, y, w, h);
+
+                // Draw Label
+                const text = `${d.label.toUpperCase()} ${Math.round(d.confidence * 100)}%`;
+                ctx.font = 'bold 12px Inter';
+                const textWidth = ctx.measureText(text).width;
+                
+                ctx.fillStyle = colorBg;
+                ctx.fillRect(x - 1, y - 22, textWidth + 10, 22);
+                
+                ctx.fillStyle = '#fff';
+                ctx.fillText(text, x + 4, y - 6);
+            });
+        }
+
+        // ══════════════════════════════════════════════════
         //  INIT — auto connect on page load
         // ══════════════════════════════════════════════════
         log('Dashboard initialized', 'info');
         log('AGRA Mission Control v1.0', 'info');
         setStatus('offline', 'STANDBY');
         connectWebSocket();
+        
+        // Independent AI Loop
+        function aiTick() {
+            if (feedActive && aiEnabled) {
+                captureAndSendFrame();
+                drawDetections();
+            } else if (!aiEnabled && cvDetections.length > 0) {
+                // Clear once when disabled
+                ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                cvDetections = [];
+            }
+            requestAnimationFrame(aiTick);
+        }
+        requestAnimationFrame(aiTick);
+
+
     </script>
 
 </body>

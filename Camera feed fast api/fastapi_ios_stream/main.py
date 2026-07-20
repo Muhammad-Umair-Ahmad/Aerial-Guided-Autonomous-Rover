@@ -2,6 +2,14 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import os
 import asyncio
+import json
+
+try:
+    from cv_pipeline import ObjectDetector
+    ai_detector = ObjectDetector()
+except ImportError:
+    print("[WARN] Could not import cv_pipeline. AI features disabled.")
+    ai_detector = None
 
 app = FastAPI(title="AGRA Mission Control")
 
@@ -73,3 +81,40 @@ async def websocket_endpoint(websocket: WebSocket):
         if websocket in connections:
             connections.remove(websocket)
         print(f"[WS] Error: {e}. Total: {len(connections)}")
+
+# ── AI Vision Endpoint ──
+
+@app.websocket("/ws/cv")
+async def cv_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for Computer Vision processing.
+    Receives base64 encoded frames from the dashboard, processes them
+    through the ObjectDetector, and returns bounding box JSON.
+    """
+    await websocket.accept()
+    print("[CV] Dashboard connected to AI vision pipeline.")
+    
+    try:
+        while True:
+            # Receive base64 string from client
+            message = await websocket.receive_text()
+            
+            try:
+                data = json.loads(message)
+                image_b64 = data.get("image", "")
+                threshold = data.get("threshold", 0.5)
+                
+                if ai_detector and image_b64:
+                    # Run detection
+                    results = ai_detector.detect_objects(image_b64, confidence_threshold=threshold)
+                    await websocket.send_json(results)
+                else:
+                    await websocket.send_json({"error": "AI disabled or no image provided", "detections": []})
+                    
+            except json.JSONDecodeError:
+                await websocket.send_json({"error": "Invalid JSON", "detections": []})
+                
+    except WebSocketDisconnect:
+        print("[CV] Dashboard disconnected from AI vision pipeline.")
+    except Exception as e:
+        print(f"[CV] Error in CV pipeline: {e}")
