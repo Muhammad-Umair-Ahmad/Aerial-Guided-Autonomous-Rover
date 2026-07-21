@@ -233,8 +233,9 @@
                 const newStream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         deviceId: { exact: deviceId },
-                        width: { min: 720, ideal: 1280 },
-                        height: { min: 720, ideal: 1280 },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        aspectRatio: { ideal: 1.77777 },
                         frameRate: { ideal: 30, max: 60 }
                     },
                     audio: false
@@ -371,8 +372,8 @@
                 // Use selected camera or default to back camera
                 const constraints = {
                     video: currentDeviceId
-                        ? { deviceId: { exact: currentDeviceId }, width: { min: 720, ideal: 1280 }, height: { min: 720, ideal: 1280 }, frameRate: { ideal: 30, max: 60 } }
-                        : { facingMode: { ideal: "environment" }, width: { min: 720, ideal: 1280 }, height: { min: 720, ideal: 1280 }, frameRate: { ideal: 30, max: 60 } },
+                        ? { deviceId: { exact: currentDeviceId }, width: { ideal: 1920 }, height: { ideal: 1080 }, aspectRatio: { ideal: 1.77777 }, frameRate: { ideal: 30, max: 60 } }
+                        : { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 }, aspectRatio: { ideal: 1.77777 }, frameRate: { ideal: 30, max: 60 } },
                     audio: false
                 };
 

@@ -107,6 +107,18 @@ async def cv_endpoint(websocket: WebSocket):
                 if ai_detector and image_b64:
                     # Run detection
                     results = ai_detector.detect_objects(image_b64, confidence_threshold=threshold)
+                    
+                    # 1. Run geofencing logic
+                    grid = data.get("grid")
+                    if grid and len(results.get("detections", [])) > 0:
+                        instruction = ai_detector.check_geofence(results["detections"], grid)
+                        results["instruction"] = instruction
+
+                    # 2. Run physical floor tile detection (if requested by frontend)
+                    if data.get("auto_grid") == True:
+                        line_results = ai_detector.detect_floor_grid(image_b64)
+                        results["physical_lines"] = line_results.get("lines", [])
+
                     await websocket.send_json(results)
                 else:
                     await websocket.send_json({"error": "AI disabled or no image provided", "detections": []})

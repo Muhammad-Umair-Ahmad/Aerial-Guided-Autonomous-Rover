@@ -163,8 +163,12 @@
         .video-container {
             position: relative; flex: 1; background: #000;
             display: flex; align-items: center; justify-content: center; min-height: 0;
+            overflow: hidden;
         }
-        .video-container video { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .video-container video {
+            /* Always display as landscape: if phone sends portrait, we rotate+scale it */
+            width: 100%; height: 100%; object-fit: contain; display: block;
+        }
 
         .video-overlay-tl, .video-overlay-tr, .video-overlay-bl, .video-overlay-br {
             position: absolute; width: 40px; height: 40px; pointer-events: none;
@@ -227,7 +231,10 @@
         .feed-empty .step-list span { color: var(--accent-cyan); }
 
         /* ── SIDEBAR ── */
-        .sidebar { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; }
+        .sidebar { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-right: 2px; }
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
         /* ── TELEMETRY ── */
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--glass-border); }
@@ -359,7 +366,7 @@
             <div class="card-header">
                 <div class="card-header-left">
                     <div class="card-icon feed">📡</div>
-                    <span class="card-title" id="feedTitle">iPhone Camera Feed</span>
+                    <span class="card-title" id="feedTitle">Satellite Camera Feed</span>
                 </div>
                 <span class="card-badge badge-offline" id="feedBadge">OFFLINE</span>
             </div>
@@ -369,12 +376,38 @@
                 <div class="video-overlay-bl"></div>
                 <div class="video-overlay-br"></div>
 
+                <!-- ══ SOLID OUT-OF-BOUNDS ALERT ══ -->
+                <div id="outOfBoundsAlert" style="
+                    display: none; position: absolute;
+                    top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: rgba(220, 38, 38, 0.97);
+                    color: white; padding: 18px 40px; border-radius: 12px;
+                    font-size: 28px; font-weight: 900;
+                    border: 4px solid #fca5a5;
+                    z-index: 200; text-align: center;
+                    pointer-events: none;
+                    box-shadow: 0 0 60px rgba(220, 38, 38, 0.9);
+                    letter-spacing: 2px;
+                    animation: alertPulse 0.6s ease-in-out infinite alternate;
+                ">
+                    ⚠️ BOUNDARY VIOLATION!<br>
+                    <span id="outOfBoundsDir" style="font-size:16px; font-weight:600; letter-spacing:1px;">DO NOT MOVE OUTSIDE</span>
+                </div>
+
+                <style>
+                @keyframes alertPulse {
+                    from { box-shadow: 0 0 40px rgba(220,38,38,0.8); }
+                    to   { box-shadow: 0 0 80px rgba(220,38,38,1.0); }
+                }
+                </style>
+
                 <div class="video-hud-top">
                     <span class="hud-tag" id="hudRes">-- × --</span>
                     <span class="hud-tag rec" id="hudRec" style="display:none;">LIVE</span>
                 </div>
                 <div class="video-hud-bottom">
                     <span class="hud-tag" id="hudSource">SRC: AWAITING</span>
+                    <span class="hud-tag" id="hudInstruction" style="font-size: 14px; background: rgba(255,0,0,0.8); color: white; display: none; border: 1px solid rgba(255,255,255,0.3);">--</span>
                     <span class="hud-tag" id="hudFps">-- FPS</span>
                 </div>
 
@@ -466,7 +499,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <span class="conn-label">Enable Object Detection</span>
                         <label class="switch">
-                            <input type="checkbox" id="aiToggle">
+                            <input type="checkbox" id="aiToggle" checked>
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -476,6 +509,48 @@
                             <span class="conn-value" id="aiThreshLabel">50%</span>
                         </div>
                         <input type="range" id="aiThreshold" min="0" max="100" value="50" style="width: 100%; cursor: pointer;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── GEOFENCE & GRID ── -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon controls">📐</div>
+                        <span class="card-title">Geofence Grid</span>
+                    </div>
+                </div>
+                <div class="conn-info" style="padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span class="conn-label">Enable Grid Drawing</span>
+                        <label class="switch">
+                            <input type="checkbox" id="gridToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span class="conn-label" style="color: var(--accent-orange);">Auto-Detect Floor Tiles (AI)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="autoGridToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
+                        <span class="conn-label">Sweep Rows:</span>
+                        <input type="number" id="sweepRows" value="5" min="2" max="20" style="width:60px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:var(--accent-cyan); border-radius:4px; padding:2px 6px; font-family:'JetBrains Mono',monospace; font-size:12px;">
+                    </div>
+                    <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
+                        <span class="conn-label">Top-Left:</span>
+                        <span class="conn-value cyan" id="gridStartLabel">-- , --</span>
+                    </div>
+                    <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+                        <span class="conn-label">Bottom-Right:</span>
+                        <span class="conn-value orange" id="gridEndLabel">-- , --</span>
+                    </div>
+                    <div>
+                        <span class="conn-label" style="display:block; margin-bottom: 4px;">Rover ESP32 IP:</span>
+                        <input type="text" id="espIpInput" placeholder="192.168.x.x" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
                     </div>
                 </div>
             </div>
@@ -492,8 +567,8 @@
                     <button class="source-option active" id="srcPhone">
                         <div class="source-radio"></div>
                         <div class="source-info">
-                            <h4>📱 iPhone Camera</h4>
-                            <p>WebRTC stream via signaling server</p>
+                            <h4>🛰️ Satellite Camera</h4>
+                            <p>Overhead WebRTC stream</p>
                         </div>
                     </button>
                     <button class="source-option disabled" id="srcSatellite">
@@ -549,6 +624,8 @@
         const hudFps = document.getElementById('hudFps');
         const hudRec = document.getElementById('hudRec');
         const hudSource = document.getElementById('hudSource');
+        const hudInstruction = document.getElementById('hudInstruction');
+        const outOfBoundsAlert = document.getElementById('outOfBoundsAlert');
         const telFps = document.getElementById('telFps');
         const telRes = document.getElementById('telRes');
         const telUptime = document.getElementById('telUptime');
@@ -562,12 +639,63 @@
         const aiToggle = document.getElementById('aiToggle');
         const aiThreshold = document.getElementById('aiThreshold');
         const aiThreshLabel = document.getElementById('aiThreshLabel');
+        const gridToggle = document.getElementById('gridToggle');
+        const autoGridToggle = document.getElementById('autoGridToggle');
+        const gridStartLabel = document.getElementById('gridStartLabel');
+        const gridEndLabel = document.getElementById('gridEndLabel');
+        const espIpInput = document.getElementById('espIpInput');
 
         let cvWs = null;
-        let aiEnabled = false;
+        let aiEnabled = true; // Default to ON for immediate tracking
         let lastFrameTime = 0;
         let cvDetections = [];
+        let cvPhysicalLines = [];
         let cvOriginalSize = null;
+
+        // ══════════════════════════════════════════════════
+        //  AI / CV PIPELINE + SAFE ZONE
+        // ══════════════════════════════════════════════════
+        
+        // Calculate default Safe Zone (10% margin from edges)
+        function getSafeZone() {
+            if (!video.videoWidth) return null;
+            
+            const videoRatio = video.videoWidth / video.videoHeight;
+            const containerRatio = video.clientWidth / video.clientHeight;
+            
+            let drawWidth = video.clientWidth;
+            let drawHeight = video.clientHeight;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            if (videoRatio > containerRatio) {
+                drawHeight = video.clientWidth / videoRatio;
+                offsetY = (video.clientHeight - drawHeight) / 2;
+            } else {
+                drawWidth = video.clientHeight * videoRatio;
+                offsetX = (video.clientWidth - drawWidth) / 2;
+            }
+            
+            const marginX = drawWidth * 0.1;
+            const marginY = drawHeight * 0.1;
+            
+            // Return coordinates mapped to the original video size for the backend
+            const scaleX = cvOriginalSize ? (cvOriginalSize.width / drawWidth) : (video.videoWidth / drawWidth);
+            const scaleY = cvOriginalSize ? (cvOriginalSize.height / drawHeight) : (video.videoHeight / drawHeight);
+            
+            return {
+                x1: (offsetX + marginX) * scaleX,
+                y1: (offsetY + marginY) * scaleY,
+                x2: (offsetX + drawWidth - marginX) * scaleX,
+                y2: (offsetY + drawHeight - marginY) * scaleY,
+                ui: { // For rendering on UI
+                    x: offsetX + marginX,
+                    y: offsetY + marginY,
+                    w: drawWidth - (marginX * 2),
+                    h: drawHeight - (marginY * 2)
+                }
+            };
+        }
 
         // ══════════════════════════════════════════════════
         //  CLOCK
@@ -851,14 +979,14 @@
                 connectCVWebSocket();
             } else {
                 log('AI Vision Model disabled', 'warn');
-                if (cvWs) {
-                    cvWs.close();
-                    cvWs = null;
-                }
-                ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                if (cvWs) { cvWs.close(); cvWs = null; }
                 cvDetections = [];
+                cvPhysicalLines = [];
             }
         };
+
+        // Auto-connect CV WebSocket since AI is enabled by default
+        if (aiEnabled) connectCVWebSocket();
 
         function connectCVWebSocket() {
             if (cvWs) return;
@@ -874,9 +1002,41 @@
                     const data = JSON.parse(msg.data);
                     if (data.error) {
                         console.error('CV Error:', data.error);
-                    } else if (data.detections) {
+                    } else if (data.detections !== undefined) {
                         cvDetections = data.detections;
                         cvOriginalSize = data.original_size;
+                        
+                        if (data.physical_lines) {
+                            cvPhysicalLines = data.physical_lines;
+                        } else {
+                            cvPhysicalLines = [];
+                        }
+                        
+                        // Display Instruction if present
+                        const hudInstruction = document.getElementById('hudInstruction');
+                        const outOfBoundsAlert = document.getElementById('outOfBoundsAlert');
+                        
+                        if (data.instruction) {
+                            hudInstruction.textContent = data.instruction;
+                            hudInstruction.style.display = 'block';
+                            
+                            if (data.instruction.includes('OUT OF BOUNDS')) {
+                                hudInstruction.style.background = 'rgba(248, 113, 113, 0.9)'; // Red
+                                hudInstruction.style.color = '#fff';
+                                outOfBoundsAlert.style.display = 'block'; // Show massive solid alert
+                            } else if (data.instruction.includes('NOT DETECTED')) {
+                                hudInstruction.style.background = 'rgba(251, 146, 60, 0.9)'; // Orange
+                                hudInstruction.style.color = '#fff';
+                                outOfBoundsAlert.style.display = 'none';
+                            } else {
+                                hudInstruction.style.background = 'rgba(74, 222, 128, 0.9)'; // Green
+                                hudInstruction.style.color = '#000';
+                                outOfBoundsAlert.style.display = 'none';
+                            }
+                        } else {
+                            hudInstruction.style.display = 'none';
+                            outOfBoundsAlert.style.display = 'none';
+                        }
                     }
                 } catch (e) {
                     console.error('Error parsing CV response', e);
@@ -895,38 +1055,70 @@
             if (!aiEnabled || !cvWs || cvWs.readyState !== WebSocket.OPEN || !feedActive) return;
 
             const now = performance.now();
-            // Send at roughly 5 FPS (200ms) to avoid overloading
+            // Send at ~5 FPS to avoid overloading the backend
             if (now - lastFrameTime < 200) return;
             lastFrameTime = now;
 
             try {
-                // Use a smaller internal canvas to compress before sending
+                // ── Image capture ────────────────────────────────────────────
+                // Capture at 80% of native resolution so YOLO gets a crisp image
                 const tempCanvas = document.createElement('canvas');
-                const scale = 0.5; // Scale down for faster transport
-                tempCanvas.width = video.videoWidth * scale;
+                const scale = 0.8;
+                tempCanvas.width  = video.videoWidth  * scale;
                 tempCanvas.height = video.videoHeight * scale;
                 const tempCtx = tempCanvas.getContext('2d');
                 tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-                
-                // JPEG compression
-                const b64 = tempCanvas.toDataURL('image/jpeg', 0.6);
-                
+                const b64 = tempCanvas.toDataURL('image/jpeg', 0.85); // 85% quality
+
                 const threshold = parseInt(aiThreshold.value) / 100.0;
-                cvWs.send(JSON.stringify({ image: b64, threshold: threshold }));
+
+                // ── Grid coordinate mapping ────────────────────────────────────
+                // The backend operates in video pixel space (e.g. 270x488).
+                // We convert canvas coords → video coords via getVideoRect().
+                let activeGrid = null;
+
+                if (gridStart && gridEnd) {
+                    // Manual grid: map canvas pixels -> video pixels
+                    const r = getVideoRect();
+                    if (r && video.videoWidth) {
+                        const sx = video.videoWidth  / r.w;
+                        const sy = video.videoHeight / r.h;
+                        activeGrid = {
+                            x1: Math.max(0, (gridStart.x - r.x) * sx),
+                            y1: Math.max(0, (gridStart.y - r.y) * sy),
+                            x2: Math.min(video.videoWidth,  (gridEnd.x - r.x) * sx),
+                            y2: Math.min(video.videoHeight, (gridEnd.y - r.y) * sy)
+                        };
+                    }
+                } else {
+                    // Default safe zone: 88% of the video frame (purely in video pixel space)
+                    if (video.videoWidth && video.videoHeight) {
+                        const mx = video.videoWidth  * 0.06;
+                        const my = video.videoHeight * 0.06;
+                        activeGrid = {
+                            x1: mx,
+                            y1: my,
+                            x2: video.videoWidth  - mx,
+                            y2: video.videoHeight - my
+                        };
+                    }
+                }
+
+                cvWs.send(JSON.stringify({
+                    image: b64,
+                    threshold: threshold,
+                    grid: activeGrid,
+                    auto_grid: autoGridToggle.checked,
+                    esp_ip: espIpInput.value || null
+                }));
             } catch (e) {
-                console.error("Frame capture error:", e);
+                console.error('Frame capture error:', e);
             }
         }
 
-        function drawDetections() {
-            // Resize canvas to match video actual displayed size
-            overlayCanvas.width = video.clientWidth;
-            overlayCanvas.height = video.clientHeight;
-            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-
-            if (!aiEnabled || cvDetections.length === 0 || !cvOriginalSize || !feedActive) return;
-
-            // Calculate scale factors (video might be letterboxed/pillarboxed due to object-fit: contain)
+        function drawPhysicalLines() {
+            if (!aiEnabled || cvPhysicalLines.length === 0 || !cvOriginalSize || !feedActive) return;
+            
             const videoRatio = video.videoWidth / video.videoHeight;
             const containerRatio = video.clientWidth / video.clientHeight;
             
@@ -946,57 +1138,417 @@
             const scaleX = drawWidth / cvOriginalSize.width;
             const scaleY = drawHeight / cvOriginalSize.height;
 
-            cvDetections.forEach(d => {
-                const x = offsetX + (d.box.x * scaleX);
-                const y = offsetY + (d.box.y * scaleY);
-                const w = d.box.width * scaleX;
-                const h = d.box.height * scaleY;
-                
-                const colorStr = `rgb(${d.color[0]}, ${d.color[1]}, ${d.color[2]})`;
-                const colorBg = `rgba(${d.color[0]}, ${d.color[1]}, ${d.color[2]}, 0.8)`;
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(167, 139, 250, 0.6)'; // Purple lines for AI detected floor grid
 
-                // Draw bounding box
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = colorStr;
-                ctx.strokeRect(x, y, w, h);
-
-                // Draw Label
-                const text = `${d.label.toUpperCase()} ${Math.round(d.confidence * 100)}%`;
-                ctx.font = 'bold 12px Inter';
-                const textWidth = ctx.measureText(text).width;
+            cvPhysicalLines.forEach(line => {
+                const x1 = offsetX + (line.x1 * scaleX);
+                const y1 = offsetY + (line.y1 * scaleY);
+                const x2 = offsetX + (line.x2 * scaleX);
+                const y2 = offsetY + (line.y2 * scaleY);
                 
-                ctx.fillStyle = colorBg;
-                ctx.fillRect(x - 1, y - 22, textWidth + 10, 22);
-                
-                ctx.fillStyle = '#fff';
-                ctx.fillText(text, x + 4, y - 6);
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
             });
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  DRAWING FUNCTIONS
+        //  Overlay renders in this order:
+        //  1. Safe Zone / Grid Boundary  (Thick RED solid lines)
+        //  2. Lawnmower Sweep Lanes       (YELLOW horizontal lines)
+        //  3. Start Position Marker       (Green circle, bottom-left)
+        //  4. Physical Floor Lines        (Purple, if AI-detected)
+        //  5. Rover Tracking Box          (Bright RED box + crosshair)
+        // ════════════════════════════════════════════════════════════════
+
+        // Helper: compute the actual pixel rect of video inside the container
+        function getVideoRect() {
+            if (!video.videoWidth || !video.videoHeight) return null;
+            const cw = video.clientWidth;
+            const ch = video.clientHeight;
+            const vr = video.videoWidth / video.videoHeight;
+            const cr = cw / ch;
+            let dw, dh, ox, oy;
+            if (vr > cr) { dw = cw; dh = cw / vr; ox = 0; oy = (ch - dh) / 2; }
+            else          { dh = ch; dw = ch * vr; ox = (cw - dw) / 2; oy = 0; }
+            return { x: ox, y: oy, w: dw, h: dh };
+        }
+
+        // Convert a canvas pixel position back to backend coord space
+        function canvasToBackend(cx, cy) {
+            const r = getVideoRect();
+            if (!r || !cvOriginalSize) return null;
+            return {
+                x: ((cx - r.x) / r.w) * cvOriginalSize.width,
+                y: ((cy - r.y) / r.h) * cvOriginalSize.height
+            };
+        }
+
+        // Convert a backend coord to canvas pixel
+        function backendToCanvas(bx, by) {
+            const r = getVideoRect();
+            if (!r || !cvOriginalSize) return null;
+            return {
+                x: r.x + (bx / cvOriginalSize.width)  * r.w,
+                y: r.y + (by / cvOriginalSize.height) * r.h
+            };
+        }
+
+        // ── 1. RED BOUNDARY ──────────────────────────────────────────────
+        function drawBoundary(gx1, gy1, gx2, gy2) {
+            // Thick solid red outer boundary (HARD WALL)
+            ctx.save();
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#ff2222';
+            ctx.setLineDash([]);
+            ctx.strokeRect(gx1, gy1, gx2 - gx1, gy2 - gy1);
+
+            // Very subtle red tint inside
+            ctx.fillStyle = 'rgba(255, 30, 30, 0.04)';
+            ctx.fillRect(gx1, gy1, gx2 - gx1, gy2 - gy1);
+
+            // Corner accents
+            const cs = 18; // corner size
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ffffff';
+            // TL
+            ctx.beginPath(); ctx.moveTo(gx1, gy1+cs); ctx.lineTo(gx1, gy1); ctx.lineTo(gx1+cs, gy1); ctx.stroke();
+            // TR
+            ctx.beginPath(); ctx.moveTo(gx2-cs, gy1); ctx.lineTo(gx2, gy1); ctx.lineTo(gx2, gy1+cs); ctx.stroke();
+            // BR
+            ctx.beginPath(); ctx.moveTo(gx2, gy2-cs); ctx.lineTo(gx2, gy2); ctx.lineTo(gx2-cs, gy2); ctx.stroke();
+            // BL
+            ctx.beginPath(); ctx.moveTo(gx1+cs, gy2); ctx.lineTo(gx1, gy2); ctx.lineTo(gx1, gy2-cs); ctx.stroke();
+            ctx.restore();
+        }
+
+        // ── 2. YELLOW SWEEP LANES ─────────────────────────────────────────
+        function drawSweepLanes(gx1, gy1, gx2, gy2) {
+            const sweepRowsEl = document.getElementById('sweepRows');
+            const rows = parseInt(sweepRowsEl ? sweepRowsEl.value : 5) || 5;
+            const h = gy2 - gy1;
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#ffe600'; // Bright yellow
+            ctx.setLineDash([8, 6]);
+            for (let i = 1; i < rows; i++) {
+                const y = gy1 + (h / rows) * i;
+                ctx.beginPath();
+                ctx.moveTo(gx1 + 4, y);
+                ctx.lineTo(gx2 - 4, y);
+                ctx.stroke();
+            }
+            // Draw zigzag arrows inside lanes to indicate direction
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255, 230, 0, 0.5)';
+            ctx.setLineDash([]);
+            const arrowSpacing = (gx2 - gx1) / 4;
+            for (let i = 0; i < rows; i++) {
+                const laneY = gy1 + (h / rows) * i + (h / rows) / 2;
+                const goRight = (i % 2 === 0);
+                const ax1 = gx1 + 10, ax2 = gx2 - 10;
+                ctx.beginPath();
+                ctx.moveTo(goRight ? ax1 : ax2, laneY);
+                ctx.lineTo(goRight ? ax2 : ax1, laneY);
+                ctx.stroke();
+                // arrowhead
+                const ah = 6;
+                const tip = goRight ? ax2 : ax1;
+                const dir = goRight ? -1 : 1;
+                ctx.beginPath();
+                ctx.moveTo(tip, laneY);
+                ctx.lineTo(tip + dir*ah, laneY - ah/2);
+                ctx.lineTo(tip + dir*ah, laneY + ah/2);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(255,230,0,0.7)';
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ── 3. START MARKER ──────────────────────────────────────────────
+        function drawStartMarker(gx1, gy2) {
+            ctx.save();
+            const mx = gx1 + 40;
+            const my = gy2 - 20;
+            // Green circle
+            ctx.beginPath();
+            ctx.arc(mx - 16, my - 2, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#22c55e';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#fff';
+            ctx.stroke();
+            // Label box
+            ctx.fillStyle = '#22c55e';
+            ctx.roundRect(mx - 6, my - 12, 60, 20, 4);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px JetBrains Mono';
+            ctx.fillText('START', mx - 2, my + 3);
+            ctx.restore();
+        }
+
+        // ── 4. ROVER TRACKING BOX ────────────────────────────────────────
+        function drawRoverTracking() {
+            if (!aiEnabled || cvDetections.length === 0 || !cvOriginalSize || !feedActive) return;
+            const r = getVideoRect();
+            if (!r) return;
+            const scaleX = r.w / cvOriginalSize.width;
+            const scaleY = r.h / cvOriginalSize.height;
+
+            // Backend now returns exactly 1 detection — the best one
+            const rover = cvDetections[0];
+            if (!rover) return;
+
+            const b  = rover.box;
+            const x  = r.x + b.x * scaleX;
+            const y  = r.y + b.y * scaleY;
+            const bw = b.width  * scaleX;
+            const bh = b.height * scaleY;
+            const cx = x + bw / 2;
+            const cy = y + bh / 2;
+
+            // Determine badge text and colour based on which engine found the rover
+            let badgeColor = '#ff0000';
+            let badgeText  = '🚗 ROVER';
+            const lbl = rover.label || '';
+            if (lbl.includes('ArUco'))      { badgeColor = '#00e676'; badgeText = `🎯 ROVER (ArUco)`; }
+            else if (lbl.includes('KNN'))   { badgeColor = '#00d2ff'; badgeText = `📡 ROVER (KNN)`; }
+            else if (lbl.includes('Templ')) { badgeColor = '#ff00ff'; badgeText = `🔍 ROVER (Template)`; }
+            else                            { badgeText  = `🚗 ROVER (YOLO ${Math.round(rover.confidence * 100)}%)`; }
+
+            ctx.save();
+
+            // ── Outer glow (soft shadow for visibility) ──────────────────
+            ctx.shadowColor   = badgeColor;
+            ctx.shadowBlur    = 12;
+
+            // ── Solid thick bounding box ──────────────────────────────────
+            ctx.lineWidth   = 3.5;
+            ctx.strokeStyle = badgeColor;
+            ctx.setLineDash([]);
+            ctx.strokeRect(x, y, bw, bh);
+
+            // ── Corner accents (L-shape corners) ─────────────────────────
+            ctx.shadowBlur  = 0;
+            ctx.lineWidth   = 3;
+            const cs = Math.min(16, bw * 0.25, bh * 0.25);   // corner size
+            [[x, y, 1, 1], [x + bw, y, -1, 1], [x, y + bh, 1, -1], [x + bw, y + bh, -1, -1]].forEach(([px, py, dx, dy]) => {
+                ctx.beginPath();
+                ctx.moveTo(px + dx * cs, py);
+                ctx.lineTo(px, py);
+                ctx.lineTo(px, py + dy * cs);
+                ctx.stroke();
+            });
+
+            // ── Center crosshair ─────────────────────────────────────────
+            ctx.lineWidth   = 1.5;
+            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+            const arm = 14;
+            ctx.beginPath(); ctx.moveTo(cx - arm, cy); ctx.lineTo(cx + arm, cy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx, cy - arm); ctx.lineTo(cx, cy + arm); ctx.stroke();
+
+            // ── Pulsing center dot ────────────────────────────────────────
+            const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.008);
+            ctx.fillStyle = badgeColor;
+            ctx.globalAlpha = pulse;
+            ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            // ── Label badge (top-left of box) ─────────────────────────────
+            ctx.shadowBlur = 0;
+            ctx.font       = 'bold 11px "JetBrains Mono", monospace';
+            const tw       = ctx.measureText(badgeText).width;
+            const badgeH   = 20;
+            const badgeY   = y - badgeH;
+
+            ctx.fillStyle = badgeColor;
+            // Rounded rect badge
+            const bx = x, by = badgeY, brd = 4;
+            ctx.beginPath();
+            ctx.moveTo(bx + brd, by); ctx.lineTo(bx + tw + 12 - brd, by);
+            ctx.arcTo(bx + tw + 12, by, bx + tw + 12, by + brd, brd);
+            ctx.lineTo(bx + tw + 12, by + badgeH - brd);
+            ctx.arcTo(bx + tw + 12, by + badgeH, bx + tw + 12 - brd, by + badgeH, brd);
+            ctx.lineTo(bx + brd, by + badgeH);
+            ctx.arcTo(bx, by + badgeH, bx, by + badgeH - brd, brd);
+            ctx.lineTo(bx, by + brd);
+            ctx.arcTo(bx, by, bx + brd, by, brd);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = (badgeColor === '#00e676' || badgeColor === '#00d2ff') ? '#000' : '#fff';
+            ctx.fillText(badgeText, bx + 6, by + 14);
+
+            // ── Pixel coordinate readout (bottom of box) ──────────────────
+            ctx.font      = '9px "JetBrains Mono", monospace';
+            ctx.fillStyle = 'rgba(255,255,255,0.75)';
+            ctx.fillText(
+                `cx:${Math.round(b.x + b.width/2)}  cy:${Math.round(b.y + b.height/2)}`,
+                x + 4, y + bh + 13
+            );
+
+            ctx.restore();
+        }
+
+        function drawSafeZoneOverlay() {
+            // Default safe zone = 88% of actual video rect
+            const r = getVideoRect();
+            if (!r) return;
+            const mx = r.w * 0.06, my = r.h * 0.06;
+            drawBoundary(r.x + mx, r.y + my, r.x + r.w - mx, r.y + r.h - my);
+            drawSweepLanes(r.x + mx, r.y + my, r.x + r.w - mx, r.y + r.h - my);
+            drawStartMarker(r.x + mx, r.y + r.h - my);
+        }
+
+        function drawGridOverlay() {
+            if (gridStart && (gridEnd || currentGridEnd)) {
+                const endPos = currentGridEnd || gridEnd;
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#ff0000'; // Thick Red
+                
+                const w = endPos.x - gridStart.x;
+                const h = endPos.y - gridStart.y;
+                
+                // Draw main boundary
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(gridStart.x, gridStart.y, w, h);
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.05)';
+                ctx.fillRect(gridStart.x, gridStart.y, w, h);
+                
+                ctx.setLineDash([]);
+                
+                // Draw internal subdivisions to simulate physical tiles / lawnmower sweep pattern
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)'; // Cyan internal lines
+                ctx.lineWidth = 1;
+                
+                const cols = 3;
+                const rows = 3;
+                
+                // Vertical lines
+                for(let i=1; i<cols; i++) {
+                    const x = gridStart.x + (w / cols) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(x, gridStart.y);
+                    ctx.lineTo(x, gridStart.y + h);
+                    ctx.stroke();
+                }
+                
+                // Horizontal lines (Sweep Paths)
+                for(let i=1; i<rows; i++) {
+                    const y = gridStart.y + (h / rows) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(gridStart.x, y);
+                    ctx.lineTo(gridStart.x + w, y);
+                    ctx.stroke();
+                }
+                
+                // Draw crosshairs at corners
+                ctx.fillStyle = '#fb923c';
+                ctx.beginPath(); ctx.arc(gridStart.x, gridStart.y, 4, 0, 2*Math.PI); ctx.fill();
+                ctx.beginPath(); ctx.arc(endPos.x, endPos.y, 4, 0, 2*Math.PI); ctx.fill();
+            }
         }
 
         // ══════════════════════════════════════════════════
         //  INIT — auto connect on page load
         // ══════════════════════════════════════════════════
         log('Dashboard initialized', 'info');
-        log('AGRA Mission Control v1.0', 'info');
+        // ════════════════════════════════════════════════════════════════
+        //  GRID MOUSE EVENTS
+        // ════════════════════════════════════════════════════════════════
+        let drawModeActive = false;
+        let isDrawing = false;
+        let gridStart = null;
+        let gridEnd = null;
+        let currentGridEnd = null;
+
+        gridToggle.onchange = (e) => {
+            drawModeActive = e.target.checked;
+            overlayCanvas.style.cursor = drawModeActive ? 'crosshair' : 'default';
+            log(drawModeActive ? 'Grid drawing mode ON. Click and drag.' : 'Grid drawing mode OFF.', 'info');
+        };
+
+        function getMousePos(canvas, evt) {
+            const rect = canvas.getBoundingClientRect();
+            return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+        }
+
+        overlayCanvas.addEventListener('mousedown', (e) => {
+            if (!drawModeActive) return;
+            isDrawing = true;
+            gridStart = getMousePos(overlayCanvas, e);
+            gridEnd = null; currentGridEnd = gridStart;
+            gridStartLabel.textContent = `${Math.round(gridStart.x)} , ${Math.round(gridStart.y)}`;
+            gridEndLabel.textContent = `-- , --`;
+        });
+
+        overlayCanvas.addEventListener('mousemove', (e) => {
+            if (!drawModeActive || !isDrawing) return;
+            currentGridEnd = getMousePos(overlayCanvas, e);
+        });
+
+        overlayCanvas.addEventListener('mouseup', (e) => {
+            if (!drawModeActive || !isDrawing) return;
+            isDrawing = false;
+            gridEnd = getMousePos(overlayCanvas, e);
+            currentGridEnd = null;
+            const tX = Math.min(gridStart.x, gridEnd.x), tY = Math.min(gridStart.y, gridEnd.y);
+            const bX = Math.max(gridStart.x, gridEnd.x), bY = Math.max(gridStart.y, gridEnd.y);
+            gridStart = {x: tX, y: tY}; gridEnd = {x: bX, y: bY};
+            gridStartLabel.textContent = `${Math.round(tX)} , ${Math.round(tY)}`;
+            gridEndLabel.textContent = `${Math.round(bX)} , ${Math.round(bY)}`;
+            log(`Grid set: (${Math.round(tX)},${Math.round(tY)}) → (${Math.round(bX)},${Math.round(bY)})`, 'success');
+        });
+
+        overlayCanvas.addEventListener('mouseleave', (e) => {
+            if (isDrawing) { isDrawing = false; gridEnd = getMousePos(overlayCanvas, e); currentGridEnd = null; }
+        });
+
+        // ════════════════════════════════════════════════════════════════
+        //  RENDER LOOP
+        // ════════════════════════════════════════════════════════════════
+        function renderLoop() {
+            requestAnimationFrame(renderLoop);
+            if (!feedActive) return;
+
+            // Sync canvas size to container
+            if (overlayCanvas.width !== video.clientWidth || overlayCanvas.height !== video.clientHeight) {
+                overlayCanvas.width  = video.clientWidth;
+                overlayCanvas.height = video.clientHeight;
+            }
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            const hasManualGrid = gridStart && (gridEnd || currentGridEnd);
+
+            // 1. Boundary + sweep lanes
+            if (hasManualGrid) {
+                drawGridOverlay();
+            } else {
+                drawSafeZoneOverlay();
+            }
+
+            // 2. Physical floor lines (AI)
+            if (aiEnabled && cvPhysicalLines.length > 0 && cvOriginalSize) drawPhysicalLines();
+
+            // 3. Rover tracking
+            drawRoverTracking();
+
+            // 4. Fire AI pipeline
+            if (aiEnabled) captureAndSendFrame();
+            else { cvDetections = []; cvPhysicalLines = []; }
+        }
+
+        log('Dashboard initialized', 'info');
+        log('AGRA Mission Control v2.0 — Aerial Recon Ready', 'success');
         setStatus('offline', 'STANDBY');
         connectWebSocket();
-        
-        // Independent AI Loop
-        function aiTick() {
-            if (feedActive && aiEnabled) {
-                captureAndSendFrame();
-                drawDetections();
-            } else if (!aiEnabled && cvDetections.length > 0) {
-                // Clear once when disabled
-                ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-                cvDetections = [];
-            }
-            requestAnimationFrame(aiTick);
-        }
-        requestAnimationFrame(aiTick);
-
+        requestAnimationFrame(renderLoop);
 
     </script>
-
 </body>
 </html>
