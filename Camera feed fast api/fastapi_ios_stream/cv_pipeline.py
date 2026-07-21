@@ -1,4 +1,3 @@
-import os
 import cv2
 import numpy as np
 import base64
@@ -13,83 +12,216 @@ except ImportError:
 class ObjectDetector:
     def __init__(self, model_name="yolov8n.pt"):
 
-        # ── YOLO ──────────────────────────────────────────────────────────
+        # ── YOLO (only used as initial hint before calibration) ───────
         self.net = None
         if YOLO_AVAILABLE:
             print(f"[CV] Loading YOLO model {model_name}...")
             self.net = YOLO(model_name)
-            print("[CV] YOLO model loaded.")
+            print("[CV] YOLO loaded (pre-calibration fallback only).")
         else:
-            print("[CV] WARNING: ultralytics not installed. pip install ultralytics")
+            print("[CV] YOLO not available — calibration mode required.")
 
-        # ── ArUco (highest priority — print a marker, tape it on) ─────────
+        # ══════════════════════════════════════════════════════════════
+        #  TRACKER STATE
+        # ══════════════════════════════════════════════════════════════
+        self.calibrated = False
+        self.tracker = None             # OpenCV object tracker
+        self.rover_box = None           # (x, y, w, h) in video pixels
+        self.rover_features = None      # ORB descriptors for re-acquisition
+        self.rover_histogram = None     # Color histogram for re-acquisition
+        self.rover_size = None          # (w, h) — calibrated size of rover
+        self.track_fail_count = 0       # consecutive tracker failures
+        self.orb = cv2.ORB_create(500)  # ORB for re-acquisition
+
+        # ── Smoothing ─────────────────────────────────────────────────
+        self.prev_box = None
+        self.miss_count = 0
+
+        print("[CV] Tracker pipeline ready. Waiting for calibration...")
+
+    # ══════════════════════════════════════════════════════════════════════
+    #  CALIBRATION — user selects the rover once
+    # ══════════════════════════════════════════════════════════════════════
+    def calibrate(self, base64_img: str, roi: dict):
+        """
+        User drew a box around the rover. We extract its features
+        and initialize a tracker.
+
+        roi = {"x": int, "y": int, "width": int, "height": int}
+        """
         try:
-            self.aruco_dict   = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-            self.aruco_params = cv2.aruco.DetectorParameters()
-            if hasattr(cv2.aruco, 'ArucoDetector'):
-                self.aruco_detector = cv2.aruco.ArucoDetector(self.aruco_dict, self.aruco_params)
-            else:
-                self.aruco_detector = None
-            print("[CV] ArUco engine initialized.")
+            if "," in base64_img:
+                base64_img = base64_img.split(",")[1]
+
+            img_data = base64.b64decode(base64_img)
+            nparr    = np.frombuffer(img_data, np.uint8)
+            img      = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+            if img is None:
+                return {"error": "Could not decode calibration image"}
+
+            h, w = img.shape[:2]
+            rx = max(0, int(roi["x"]))
+            ry = max(0, int(roi["y"]))
+            rw = min(w - rx, int(roi["width"]))
+            rh = min(h - ry, int(roi["height"]))
+
+            if rw < 10 or rh < 10:
+                return {"error": "ROI too small — draw a bigger box around the rover"}
+
+            # ── Save calibrated size (used to validate future detections) ─
+            self.rover_size = (rw, rh)
+            self.rover_box  = (rx, ry, rw, rh)
+
+            # ── Extract ORB features for re-acquisition ───────────────
+            roi_img  = img[ry:ry+rh, rx:rx+rw]
+            roi_gray = cv2.cvtColor(roi_img, cv2.COLOR_BGR2GRAY)
+            kp, des  = self.orb.detectAndCompute(roi_gray, None)
+            self.rover_features = des
+
+            # ── Extract color histogram for re-acquisition ────────────
+            hsv_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2HSV)
+            self.rover_histogram = cv2.calcHist(
+                [hsv_roi], [0, 1], None, [30, 32], [0, 180, 0, 256]
+            )
+            cv2.normalize(self.rover_histogram, self.rover_histogram, 0, 255, cv2.NORM_MINMAX)
+
+            # ── Initialize CSRT tracker ───────────────────────────────
+            self._init_tracker(img, (rx, ry, rw, rh))
+
+            self.calibrated = True
+            self.track_fail_count = 0
+            self.miss_count = 0
+            self.prev_box = None
+
+            print(f"[CV] ✅ Calibrated! Rover size: {rw}x{rh}px, "
+                  f"ORB features: {len(kp) if kp else 0}")
+
+            return {
+                "status": "calibrated",
+                "rover_size": {"width": rw, "height": rh},
+                "roi": {"x": rx, "y": ry, "width": rw, "height": rh}
+            }
+
         except Exception as e:
-            print(f"[CV] ArUco init failed: {e}")
-            self.aruco_dict = None
+            print(f"[CV] Calibration error: {e}")
+            import traceback; traceback.print_exc()
+            return {"error": str(e)}
 
-        # ── KNN Background Subtractor (PRIMARY — works great for fixed cam) ─
-        # history=500  : how many frames it uses to build the background model
-        # dist2Threshold: pixel-color distance to call something foreground
-        # detectShadows=False: don't mark shadows as foreground (saves noise)
-        self.bg_subtractor = cv2.createBackgroundSubtractorKNN(
-            history=500,
-            dist2Threshold=400.0,
-            detectShadows=False
-        )
-        self.knn_warmup_frames = 0          # counts how many frames we've fed in
-        self.KNN_WARMUP = 30                # frames before we start trusting KNN output
-        print("[CV] KNN background subtractor initialized.")
+    def _init_tracker(self, frame, bbox):
+        """Initialize or re-initialize the OpenCV tracker."""
+        # OpenCV 4.13 — use the best available deep learning tracker
+        tracker_created = False
 
-        # ── Template Matching (SECONDARY) ─────────────────────────────────
-        self.template       = None
-        self.template_gray  = None
-        self.template_sizes = []            # multiple scales for multi-scale matching
-
-        # Try to load rover_template.jpg that lives next to this file
-        template_path = os.path.join(os.path.dirname(__file__), 'rover_template.jpg')
-        if os.path.exists(template_path):
+        # Try TrackerVit first (Vision Transformer — best quality)
+        if not tracker_created:
             try:
-                print("[CV] Loading rover_template.jpg for template matching...")
-                tpl = cv2.imread(template_path)
-                if tpl is not None:
-                    self.template      = tpl
-                    self.template_gray = cv2.cvtColor(tpl, cv2.COLOR_BGR2GRAY)
-                    th, tw             = self.template_gray.shape[:2]
-                    # Pre-generate templates at multiple scales so matching works
-                    # regardless of the camera height / rover distance
-                    for scale in [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0]:
-                        new_w = max(10, int(tw * scale))
-                        new_h = max(10, int(th * scale))
-                        self.template_sizes.append(
-                            cv2.resize(self.template_gray, (new_w, new_h))
-                        )
-                    print(f"[CV] Template loaded ({tw}x{th}px). {len(self.template_sizes)} scale variants.")
-            except Exception as e:
-                print(f"[CV] Template load failed: {e}")
+                self.tracker = cv2.TrackerVit_create()
+                tracker_created = True
+                print("[CV] Using TrackerVit (Vision Transformer)")
+            except (AttributeError, cv2.error):
+                pass
+
+        # Try DaSiamRPN (deep Siamese tracker — very good)
+        if not tracker_created:
+            try:
+                self.tracker = cv2.TrackerDaSiamRPN_create()
+                tracker_created = True
+                print("[CV] Using TrackerDaSiamRPN")
+            except (AttributeError, cv2.error):
+                pass
+
+        # Fallback to MIL (basic, always available)
+        if not tracker_created:
+            try:
+                self.tracker = cv2.TrackerMIL_create()
+                tracker_created = True
+                print("[CV] Using TrackerMIL (fallback)")
+            except (AttributeError, cv2.error):
+                print("[CV] ERROR: No tracker available!")
+                return
+
+        self.tracker.init(frame, bbox)
 
     # ══════════════════════════════════════════════════════════════════════
-    #  MAIN DETECTION ENTRY POINT
+    #  RE-ACQUISITION — find the rover again when tracker loses it
     # ══════════════════════════════════════════════════════════════════════
-    def detect_objects(self, base64_img: str, confidence_threshold: float = 0.6):
+    def _reacquire(self, img, frame_w, frame_h):
         """
-        4-stage pipeline (highest → lowest priority):
-          1. ArUco  — deterministic, needs a printed marker taped to rover
-          2. KNN    — background subtraction; best for fixed overhead cam
-          3. Template — multi-scale normalized cross-correlation vs rover_template.jpg
-          4. YOLO   — neural net at the user-set confidence threshold (default 60%)
+        Try to find the rover using color histogram backprojection + ORB.
+        Returns (x, y, w, h) or None.
+        """
+        if self.rover_histogram is None:
+            return None
 
-        Returns a single 'rover' detection (the best one found) plus original_size.
+        # ── Color histogram backprojection ────────────────────────────
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        backproj = cv2.calcBackProject(
+            [hsv], [0, 1], self.rover_histogram, [0, 180, 0, 256], 1
+        )
+
+        # Clean up
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
+        backproj = cv2.morphologyEx(backproj, cv2.MORPH_CLOSE, kernel, iterations=2)
+        backproj = cv2.morphologyEx(backproj, cv2.MORPH_OPEN, kernel, iterations=1)
+        _, backproj = cv2.threshold(backproj, 50, 255, cv2.THRESH_BINARY)
+
+        # Find contours
+        contours, _ = cv2.findContours(backproj, cv2.RETR_EXTERNAL,
+                                       cv2.CHAIN_APPROX_SIMPLE)
+
+        if not contours:
+            return None
+
+        # ── Filter by size (must be close to calibrated rover size) ───
+        cal_w, cal_h = self.rover_size
+        cal_area = cal_w * cal_h
+        best = None
+        best_score = 0
+
+        for cnt in contours:
+            rx, ry, rw, rh = cv2.boundingRect(cnt)
+            area = rw * rh
+
+            # Size filter: must be 30%–250% of calibrated area
+            if area < cal_area * 0.3 or area > cal_area * 2.5:
+                continue
+
+            # Score by how close the area matches the calibrated size
+            size_score = 1.0 - abs(area - cal_area) / cal_area
+
+            # Bonus for ORB feature matches in this region
+            feature_score = 0
+            if self.rover_features is not None and len(self.rover_features) > 0:
+                roi_gray = cv2.cvtColor(img[ry:ry+rh, rx:rx+rw], cv2.COLOR_BGR2GRAY)
+                kp2, des2 = self.orb.detectAndCompute(roi_gray, None)
+                if des2 is not None and len(des2) > 0:
+                    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+                    matches = bf.match(self.rover_features, des2)
+                    good = [m for m in matches if m.distance < 60]
+                    feature_score = len(good) / max(1, len(self.rover_features))
+
+            total_score = size_score * 0.4 + feature_score * 0.6
+            if total_score > best_score:
+                best_score = total_score
+                best = (rx, ry, rw, rh)
+
+        # Only accept if we have a reasonable match
+        if best is not None and best_score > 0.15:
+            return best
+
+        return None
+
+    # ══════════════════════════════════════════════════════════════════════
+    #  MAIN DETECTION
+    # ══════════════════════════════════════════════════════════════════════
+    def detect_objects(self, base64_img: str, confidence_threshold: float = 0.3):
+        """
+        If calibrated: use OpenCV tracker (fast, accurate, knows the rover).
+        If not calibrated: fall back to YOLO (hint only — unreliable).
         """
         try:
-            # ── Decode image ──────────────────────────────────────────────
+            # ── Decode image ──────────────────────────────────────────
             if "," in base64_img:
                 base64_img = base64_img.split(",")[1]
 
@@ -100,150 +232,118 @@ class ObjectDetector:
             if img is None:
                 return {"error": "Could not decode image", "detections": []}
 
-            h, w     = img.shape[:2]
-            gray     = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            rover    = None          # will hold the winning detection dict
+            h, w = img.shape[:2]
+            rover = None
 
-            # ────────────────────────────────────────────────────────────
-            # STAGE 1 — ArUco  (green box, confidence 1.0)
-            # ────────────────────────────────────────────────────────────
-            if self.aruco_dict is not None:
-                if self.aruco_detector is not None:
-                    corners, ids, _ = self.aruco_detector.detectMarkers(gray)
-                else:
-                    corners, ids, _ = cv2.aruco.detectMarkers(
-                        gray, self.aruco_dict, parameters=self.aruco_params)
+            # ──────────────────────────────────────────────────────────
+            #  CALIBRATED MODE — OpenCV Tracker
+            # ──────────────────────────────────────────────────────────
+            if self.calibrated and self.tracker is not None:
+                success, bbox = self.tracker.update(img)
 
-                if ids is not None and len(ids) > 0:
-                    c    = corners[0][0]
-                    mn_x = int(np.min(c[:, 0]));  mx_x = int(np.max(c[:, 0]))
-                    mn_y = int(np.min(c[:, 1]));  mx_y = int(np.max(c[:, 1]))
-                    rover = {
-                        "label":      f"ROVER (ArUco #{ids[0][0]})",
-                        "confidence": 1.0,
-                        "box":        {"x": mn_x, "y": mn_y,
-                                       "width": mx_x - mn_x, "height": mx_y - mn_y},
-                        "color":      [0, 255, 0]      # green
-                    }
+                if success:
+                    bx, by, bw, bh = [int(v) for v in bbox]
 
-            # ────────────────────────────────────────────────────────────
-            # STAGE 2 — KNN Background Subtraction  (cyan box, conf 0.90)
-            # Best method for a FIXED overhead camera — camera never moves,
-            # so the floor is the stable background and the rover is the
-            # only moving / foreground object.
-            # ────────────────────────────────────────────────────────────
-            if rover is None:
-                fg_mask = self.bg_subtractor.apply(img)
-                self.knn_warmup_frames += 1
+                    # Sanity check: box must be reasonable size
+                    cal_w, cal_h = self.rover_size
+                    cal_area = cal_w * cal_h
+                    box_area = bw * bh
 
-                if self.knn_warmup_frames >= self.KNN_WARMUP:
-                    # Clean up the mask
-                    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-                    fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN,  kernel, iterations=1)
-                    fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, kernel, iterations=3)
+                    if (box_area > cal_area * 0.2 and
+                        box_area < cal_area * 3.0 and
+                        bx >= 0 and by >= 0 and
+                        bx + bw <= w and by + bh <= h):
 
-                    contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL,
-                                                   cv2.CHAIN_APPROX_SIMPLE)
-
-                    # Size guard: rover should be 1%–35% of the frame
-                    MIN_A = (w * h) * 0.010
-                    MAX_A = (w * h) * 0.35
-                    valid = [c for c in contours
-                             if MIN_A < cv2.contourArea(c) < MAX_A]
-
-                    if valid:
-                        largest   = max(valid, key=cv2.contourArea)
-                        rx, ry, rw, rh = cv2.boundingRect(largest)
-                        # Small padding so the box doesn't clip the rover edges
-                        pad = 8
-                        rx  = max(0, rx - pad);  ry  = max(0, ry - pad)
-                        rw  = min(w - rx, rw + pad * 2)
-                        rh  = min(h - ry, rh + pad * 2)
                         rover = {
-                            "label":      "ROVER (KNN)",
-                            "confidence": 0.90,
-                            "box":        {"x": rx, "y": ry,
-                                           "width": rw, "height": rh},
-                            "color":      [0, 220, 255]    # cyan
+                            "label":      "ROVER (tracking)",
+                            "confidence": 0.95,
+                            "box":        {"x": bx, "y": by,
+                                           "width": bw, "height": bh},
+                            "color":      [0, 255, 100]   # green = tracked
+                        }
+                        self.track_fail_count = 0
+                    else:
+                        success = False  # box went bad
+
+                if not success:
+                    self.track_fail_count += 1
+                    print(f"[CV] Tracker lost rover (fail #{self.track_fail_count})")
+
+                    # Try re-acquisition after 3 consecutive failures
+                    if self.track_fail_count >= 3:
+                        print("[CV] Attempting re-acquisition...")
+                        reacq = self._reacquire(img, w, h)
+                        if reacq is not None:
+                            rx, ry, rw, rh = reacq
+                            # Re-initialize tracker with new position
+                            self._init_tracker(img, (rx, ry, rw, rh))
+                            self.track_fail_count = 0
+                            rover = {
+                                "label":      "ROVER (re-acquired)",
+                                "confidence": 0.80,
+                                "box":        {"x": rx, "y": ry,
+                                               "width": rw, "height": rh},
+                                "color":      [255, 165, 0]   # orange = re-acquired
+                            }
+                            print(f"[CV] ✅ Re-acquired rover at ({rx},{ry})")
+                        else:
+                            print("[CV] ❌ Re-acquisition failed — need recalibration")
+
+                    # Hold last known position for a few frames
+                    if rover is None and self.prev_box is not None and self.track_fail_count <= 5:
+                        rover = {
+                            "label":      "ROVER (last seen)",
+                            "confidence": max(0.2, 0.7 - self.track_fail_count * 0.1),
+                            "box":        self.prev_box,
+                            "color":      [255, 140, 0]
                         }
 
-            # ────────────────────────────────────────────────────────────
-            # STAGE 3 — Multi-scale Template Matching  (magenta, conf 0.80)
-            # Compares every frame against rover_template.jpg at 7 scales.
-            # Works even if the rover is stationary (unlike KNN).
-            # ────────────────────────────────────────────────────────────
-            if rover is None and self.template_sizes:
-                best_val  = -1.0
-                best_loc  = None
-                best_size = None
-
-                for tpl in self.template_sizes:
-                    th, tw = tpl.shape[:2]
-                    if tw > w or th > h:
-                        continue
-                    result = cv2.matchTemplate(gray, tpl, cv2.TM_CCOEFF_NORMED)
-                    _, max_val, _, max_loc = cv2.minMaxLoc(result)
-                    if max_val > best_val:
-                        best_val  = max_val
-                        best_loc  = max_loc
-                        best_size = (tw, th)
-
-                # Only accept if similarity is reasonable (≥ 0.35)
-                if best_val >= 0.35 and best_loc is not None:
-                    tx, ty = best_loc
-                    tw, th = best_size
-                    rover = {
-                        "label":      f"ROVER (Template {int(best_val*100)}%)",
-                        "confidence": float(best_val),
-                        "box":        {"x": tx, "y": ty,
-                                       "width": tw, "height": th},
-                        "color":      [255, 0, 255]    # magenta
-                    }
-
-            # ────────────────────────────────────────────────────────────
-            # STAGE 4 — YOLO  (orange box, uses user-set threshold ~60%)
-            # ────────────────────────────────────────────────────────────
-            if rover is None and self.net is not None:
-                results = self.net(img, conf=confidence_threshold, verbose=False)
-
-                # Classes a DIY rover might be detected as from overhead
-                ROVER_CLASSES = {
-                    "car", "truck", "bus", "motorcycle", "bicycle",
-                    "remote", "cell phone", "mouse", "keyboard",
-                    "book", "clock", "bottle", "cup", "suitcase",
-                    "backpack", "skateboard", "sports ball", "frisbee"
-                }
+            # ──────────────────────────────────────────────────────────
+            #  UNCALIBRATED MODE — YOLO hint (unreliable, just a hint)
+            # ──────────────────────────────────────────────────────────
+            elif self.net is not None:
+                results = self.net(img, conf=max(0.20, confidence_threshold),
+                                   verbose=False)
 
                 if results and len(results) > 0:
-                    result     = results[0]
+                    result = results[0]
                     boxes_xyxy = result.boxes.xyxy.cpu().numpy()
                     confs      = result.boxes.conf.cpu().numpy()
                     classes    = result.boxes.cls.cpu().numpy()
 
-                    priority = []
-                    generic  = []
+                    best = None
+                    best_conf = 0
                     for box, conf, cls_idx in zip(boxes_xyxy, confs, classes):
                         label = result.names[int(cls_idx)]
-                        entry = {
-                            "label":      label,
-                            "confidence": float(conf),
-                            "box": {
-                                "x":      int(box[0]),
-                                "y":      int(box[1]),
-                                "width":  int(box[2] - box[0]),
-                                "height": int(box[3] - box[1])
-                            },
-                            "color": [255, 140, 0]   # orange
-                        }
-                        (priority if label in ROVER_CLASSES else generic).append(entry)
+                        bw = int(box[2] - box[0])
+                        bh = int(box[3] - box[1])
+                        area_ratio = (bw * bh) / (w * h) if (w * h) > 0 else 0
+                        if area_ratio < 0.005 or area_ratio > 0.40:
+                            continue
+                        if conf > best_conf:
+                            best_conf = conf
+                            best = {
+                                "label":      f"⚠️ UNCALIBRATED ({label} {int(conf*100)}%)",
+                                "confidence": float(conf),
+                                "box":        {"x": int(box[0]), "y": int(box[1]),
+                                               "width": bw, "height": bh},
+                                "color":      [255, 60, 60]
+                            }
+                    rover = best
 
-                    pool = priority if priority else generic
-                    if pool:
-                        rover = max(pool, key=lambda x: x["confidence"])
+            # ── Smooth box ────────────────────────────────────────────
+            if rover is not None:
+                rover = self._smooth(rover)
+                self.miss_count = 0
+            else:
+                self.miss_count += 1
 
-            # Return exactly one detection (the winner) or empty list
             detections = [rover] if rover is not None else []
-            return {"detections": detections, "original_size": {"width": w, "height": h}}
+            return {
+                "detections": detections,
+                "original_size": {"width": w, "height": h},
+                "calibrated": self.calibrated
+            }
 
         except Exception as e:
             print(f"[CV] Detection error: {e}")
@@ -251,21 +351,36 @@ class ObjectDetector:
             return {"error": str(e), "detections": []}
 
     # ══════════════════════════════════════════════════════════════════════
+    #  EMA SMOOTHING
+    # ══════════════════════════════════════════════════════════════════════
+    def _smooth(self, det):
+        box = det["box"]
+        if self.prev_box is None:
+            self.prev_box = box
+            return det
+
+        a = 0.6
+        smoothed = {
+            "x":      int(a * box["x"]      + (1-a) * self.prev_box["x"]),
+            "y":      int(a * box["y"]      + (1-a) * self.prev_box["y"]),
+            "width":  int(a * box["width"]  + (1-a) * self.prev_box["width"]),
+            "height": int(a * box["height"] + (1-a) * self.prev_box["height"]),
+        }
+        self.prev_box = smoothed
+        det["box"] = smoothed
+        return det
+
+    # ══════════════════════════════════════════════════════════════════════
     #  GEOFENCE CHECK
     # ══════════════════════════════════════════════════════════════════════
     def check_geofence(self, detections, grid):
-        """
-        Returns a direction instruction string.
-        Uses CENTER of rover for in/out determination (not full box edges,
-        which caused false positives when the rover was clearly inside).
-        """
         if not grid or not detections:
             return "ROVER NOT DETECTED" if not detections else None
 
         x1, y1 = grid["x1"], grid["y1"]
         x2, y2 = grid["x2"], grid["y2"]
 
-        rover = detections[0]   # always the single best detection
+        rover = detections[0]
         box   = rover["box"]
         cx    = box["x"] + box["width"]  / 2
         cy    = box["y"] + box["height"] / 2
@@ -278,12 +393,9 @@ class ObjectDetector:
         return "IN BOUNDS: CONTINUE SWEEP"
 
     # ══════════════════════════════════════════════════════════════════════
-    #  FLOOR GRID DETECTION (unchanged)
+    #  FLOOR GRID DETECTION
     # ══════════════════════════════════════════════════════════════════════
     def detect_floor_grid(self, base64_img: str):
-        """
-        Detects tile / grout lines using Canny + Probabilistic Hough Transform.
-        """
         try:
             if "," in base64_img:
                 base64_img = base64_img.split(",")[1]

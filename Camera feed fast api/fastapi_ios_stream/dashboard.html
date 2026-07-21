@@ -506,9 +506,24 @@
                     <div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                             <span class="conn-label">Confidence Threshold</span>
-                            <span class="conn-value" id="aiThreshLabel">50%</span>
+                            <span class="conn-value" id="aiThreshLabel">40%</span>
                         </div>
-                        <input type="range" id="aiThreshold" min="0" max="100" value="50" style="width: 100%; cursor: pointer;">
+                        <input type="range" id="aiThreshold" min="0" max="100" value="40" style="width: 100%; cursor: pointer;">
+                    </div>
+                    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--glass-border);">
+                        <button id="selectRoverBtn" style="
+                            width: 100%; padding: 10px; border-radius: 8px; cursor: pointer;
+                            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(45, 212, 191, 0.15));
+                            border: 1px solid var(--accent-cyan); color: var(--accent-cyan);
+                            font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;
+                            letter-spacing: 0.5px; transition: all 0.2s ease;
+                        " onmouseover="this.style.background='linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(45, 212, 191, 0.3))'" onmouseout="this.style.background='linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(45, 212, 191, 0.15))'">
+                            🎯 SELECT ROVER
+                        </button>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                            <span class="conn-label">Tracking Status</span>
+                            <span class="conn-value waiting" id="calibStatus">Not calibrated</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -646,11 +661,19 @@
         const espIpInput = document.getElementById('espIpInput');
 
         let cvWs = null;
-        let aiEnabled = true; // Default to ON for immediate tracking
+        let aiEnabled = true;
         let lastFrameTime = 0;
         let cvDetections = [];
         let cvPhysicalLines = [];
         let cvOriginalSize = null;
+        let isCalibrated = false;
+
+        // ── Rover selection state ────────────────────────────────
+        let selectRoverMode = false;
+        let roverSelectStart = null;
+        let roverSelectEnd = null;
+        let roverSelectCurrent = null;
+        let isSelectingRover = false;
 
         // ══════════════════════════════════════════════════
         //  AI / CV PIPELINE + SAFE ZONE
@@ -1000,11 +1023,29 @@
             cvWs.onmessage = (msg) => {
                 try {
                     const data = JSON.parse(msg.data);
+
+                    // Handle calibration result
+                    if (data.type === 'calibrate_result') {
+                        const calibStatus = document.getElementById('calibStatus');
+                        if (data.status === 'calibrated') {
+                            isCalibrated = true;
+                            calibStatus.textContent = '✅ Tracking';
+                            calibStatus.className = 'conn-value connected';
+                            log(`Rover calibrated! Size: ${data.rover_size.width}×${data.rover_size.height}px`, 'success');
+                        } else {
+                            calibStatus.textContent = '❌ Failed';
+                            calibStatus.className = 'conn-value error';
+                            log(`Calibration failed: ${data.error}`, 'error');
+                        }
+                        return;
+                    }
+
                     if (data.error) {
                         console.error('CV Error:', data.error);
                     } else if (data.detections !== undefined) {
                         cvDetections = data.detections;
                         cvOriginalSize = data.original_size;
+                        if (data.calibrated !== undefined) isCalibrated = data.calibrated;
                         
                         if (data.physical_lines) {
                             cvPhysicalLines = data.physical_lines;
@@ -1012,7 +1053,6 @@
                             cvPhysicalLines = [];
                         }
                         
-                        // Display Instruction if present
                         const hudInstruction = document.getElementById('hudInstruction');
                         const outOfBoundsAlert = document.getElementById('outOfBoundsAlert');
                         
@@ -1021,15 +1061,15 @@
                             hudInstruction.style.display = 'block';
                             
                             if (data.instruction.includes('OUT OF BOUNDS')) {
-                                hudInstruction.style.background = 'rgba(248, 113, 113, 0.9)'; // Red
+                                hudInstruction.style.background = 'rgba(248, 113, 113, 0.9)';
                                 hudInstruction.style.color = '#fff';
-                                outOfBoundsAlert.style.display = 'block'; // Show massive solid alert
+                                outOfBoundsAlert.style.display = 'block';
                             } else if (data.instruction.includes('NOT DETECTED')) {
-                                hudInstruction.style.background = 'rgba(251, 146, 60, 0.9)'; // Orange
+                                hudInstruction.style.background = 'rgba(251, 146, 60, 0.9)';
                                 hudInstruction.style.color = '#fff';
                                 outOfBoundsAlert.style.display = 'none';
                             } else {
-                                hudInstruction.style.background = 'rgba(74, 222, 128, 0.9)'; // Green
+                                hudInstruction.style.background = 'rgba(74, 222, 128, 0.9)';
                                 hudInstruction.style.color = '#000';
                                 outOfBoundsAlert.style.display = 'none';
                             }
@@ -1061,14 +1101,14 @@
 
             try {
                 // ── Image capture ────────────────────────────────────────────
-                // Capture at 80% of native resolution so YOLO gets a crisp image
+                // Send at NATIVE resolution — the frame is already tiny (270×488)
+                // and downscaling hurts YOLO accuracy. No scaling needed.
                 const tempCanvas = document.createElement('canvas');
-                const scale = 0.8;
-                tempCanvas.width  = video.videoWidth  * scale;
-                tempCanvas.height = video.videoHeight * scale;
+                tempCanvas.width  = video.videoWidth;
+                tempCanvas.height = video.videoHeight;
                 const tempCtx = tempCanvas.getContext('2d');
                 tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-                const b64 = tempCanvas.toDataURL('image/jpeg', 0.85); // 85% quality
+                const b64 = tempCanvas.toDataURL('image/jpeg', 0.90); // 90% quality
 
                 const threshold = parseInt(aiThreshold.value) / 100.0;
 
@@ -1312,16 +1352,21 @@
             const cx = x + bw / 2;
             const cy = y + bh / 2;
 
-            // Determine badge text and colour based on which engine found the rover
-            let badgeColor = '#ff0000';
+            // Determine badge text and colour
+            let badgeColor = '#00e676';  // green = actively tracking
             let badgeText  = '🚗 ROVER';
             const lbl = rover.label || '';
-            if (lbl.includes('ArUco'))      { badgeColor = '#00e676'; badgeText = `🎯 ROVER (ArUco)`; }
-            else if (lbl.includes('KNN'))   { badgeColor = '#00d2ff'; badgeText = `📡 ROVER (KNN)`; }
-            else if (lbl.includes('Templ')) { badgeColor = '#ff00ff'; badgeText = `🔍 ROVER (Template)`; }
-            else                            { badgeText  = `🚗 ROVER (YOLO ${Math.round(rover.confidence * 100)}%)`; }
+            const isStale = lbl.includes('last seen');
+            if (lbl.includes('tracking'))      { badgeColor = '#00e676'; badgeText = '🎯 ROVER (tracking)'; }
+            else if (lbl.includes('re-acq'))   { badgeColor = '#ff9800'; badgeText = '🔄 ROVER (re-acquired)'; }
+            else if (lbl.includes('last seen')){ badgeColor = '#ff6600'; badgeText = '⏳ ROVER (last seen)'; }
+            else if (lbl.includes('UNCALIB'))   { badgeColor = '#ff4444'; badgeText = `⚠️ ${lbl}`; }
+            else                               { badgeText = `🚗 ${lbl}`; }
 
             ctx.save();
+
+            // Reduce opacity for stale (last-seen) detections
+            if (isStale) ctx.globalAlpha = 0.5;
 
             // ── Outer glow (soft shadow for visibility) ──────────────────
             ctx.shadowColor   = badgeColor;
@@ -1458,6 +1503,73 @@
         //  INIT — auto connect on page load
         // ══════════════════════════════════════════════════
         log('Dashboard initialized', 'info');
+
+        // ════════════════════════════════════════════════════════════════
+        //  SELECT ROVER MODE
+        // ════════════════════════════════════════════════════════════════
+        const selectRoverBtn = document.getElementById('selectRoverBtn');
+
+        selectRoverBtn.onclick = () => {
+            if (!feedActive) {
+                log('Cannot select rover — no video feed active', 'error');
+                return;
+            }
+            selectRoverMode = !selectRoverMode;
+            if (selectRoverMode) {
+                // Disable grid drawing while selecting rover
+                drawModeActive = false;
+                gridToggle.checked = false;
+                overlayCanvas.style.cursor = 'crosshair';
+                overlayCanvas.style.pointerEvents = 'auto';
+                selectRoverBtn.textContent = '🎯 CLICK & DRAG ON ROVER...';
+                selectRoverBtn.style.borderColor = '#4ade80';
+                selectRoverBtn.style.color = '#4ade80';
+                selectRoverBtn.style.animation = 'pulse-dot 1.5s ease-in-out infinite';
+                log('🎯 Draw a box around the rover in the video feed', 'info');
+            } else {
+                overlayCanvas.style.cursor = 'default';
+                selectRoverBtn.textContent = '🎯 SELECT ROVER';
+                selectRoverBtn.style.borderColor = 'var(--accent-cyan)';
+                selectRoverBtn.style.color = 'var(--accent-cyan)';
+                selectRoverBtn.style.animation = 'none';
+            }
+        };
+
+        function sendCalibration(canvasBox) {
+            if (!cvWs || cvWs.readyState !== WebSocket.OPEN || !feedActive) return;
+
+            // Convert canvas coordinates to video pixel coordinates
+            const r = getVideoRect();
+            if (!r || !video.videoWidth) return;
+
+            const sx = video.videoWidth  / r.w;
+            const sy = video.videoHeight / r.h;
+            const roi = {
+                x:      Math.max(0, (canvasBox.x - r.x) * sx),
+                y:      Math.max(0, (canvasBox.y - r.y) * sy),
+                width:  canvasBox.w * sx,
+                height: canvasBox.h * sy
+            };
+
+            // Capture current frame
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width  = video.videoWidth;
+            tempCanvas.height = video.videoHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+            const b64 = tempCanvas.toDataURL('image/jpeg', 0.95);
+
+            cvWs.send(JSON.stringify({
+                type: 'calibrate',
+                image: b64,
+                roi: roi
+            }));
+
+            log(`Calibrating rover at (${Math.round(roi.x)},${Math.round(roi.y)}) ${Math.round(roi.width)}×${Math.round(roi.height)}px...`, 'info');
+            document.getElementById('calibStatus').textContent = 'Calibrating...';
+            document.getElementById('calibStatus').className = 'conn-value waiting';
+        }
+
         // ════════════════════════════════════════════════════════════════
         //  GRID MOUSE EVENTS
         // ════════════════════════════════════════════════════════════════
@@ -1469,6 +1581,13 @@
 
         gridToggle.onchange = (e) => {
             drawModeActive = e.target.checked;
+            if (drawModeActive) {
+                selectRoverMode = false;
+                selectRoverBtn.textContent = '🎯 SELECT ROVER';
+                selectRoverBtn.style.borderColor = 'var(--accent-cyan)';
+                selectRoverBtn.style.color = 'var(--accent-cyan)';
+                selectRoverBtn.style.animation = 'none';
+            }
             overlayCanvas.style.cursor = drawModeActive ? 'crosshair' : 'default';
             log(drawModeActive ? 'Grid drawing mode ON. Click and drag.' : 'Grid drawing mode OFF.', 'info');
         };
@@ -1479,26 +1598,71 @@
         }
 
         overlayCanvas.addEventListener('mousedown', (e) => {
+            const pos = getMousePos(overlayCanvas, e);
+
+            // ROVER SELECTION MODE
+            if (selectRoverMode) {
+                isSelectingRover = true;
+                roverSelectStart = pos;
+                roverSelectEnd = null;
+                roverSelectCurrent = pos;
+                return;
+            }
+
+            // GRID DRAWING MODE
             if (!drawModeActive) return;
             isDrawing = true;
-            gridStart = getMousePos(overlayCanvas, e);
-            gridEnd = null; currentGridEnd = gridStart;
-            gridStartLabel.textContent = `${Math.round(gridStart.x)} , ${Math.round(gridStart.y)}`;
+            gridStart = pos;
+            gridEnd = null; currentGridEnd = pos;
+            gridStartLabel.textContent = `${Math.round(pos.x)} , ${Math.round(pos.y)}`;
             gridEndLabel.textContent = `-- , --`;
         });
 
         overlayCanvas.addEventListener('mousemove', (e) => {
+            const pos = getMousePos(overlayCanvas, e);
+            if (isSelectingRover) { roverSelectCurrent = pos; return; }
             if (!drawModeActive || !isDrawing) return;
-            currentGridEnd = getMousePos(overlayCanvas, e);
+            currentGridEnd = pos;
         });
 
         overlayCanvas.addEventListener('mouseup', (e) => {
+            const pos = getMousePos(overlayCanvas, e);
+
+            // ROVER SELECTION — send calibration
+            if (isSelectingRover && roverSelectStart) {
+                isSelectingRover = false;
+                roverSelectEnd = pos;
+                roverSelectCurrent = null;
+
+                const tX = Math.min(roverSelectStart.x, pos.x);
+                const tY = Math.min(roverSelectStart.y, pos.y);
+                const bX = Math.max(roverSelectStart.x, pos.x);
+                const bY = Math.max(roverSelectStart.y, pos.y);
+                const w = bX - tX, h = bY - tY;
+
+                if (w > 10 && h > 10) {
+                    sendCalibration({ x: tX, y: tY, w: w, h: h });
+                } else {
+                    log('Selection too small — draw a bigger box', 'warn');
+                }
+
+                // Exit selection mode
+                selectRoverMode = false;
+                overlayCanvas.style.cursor = 'default';
+                selectRoverBtn.textContent = '🎯 RE-SELECT ROVER';
+                selectRoverBtn.style.borderColor = 'var(--accent-cyan)';
+                selectRoverBtn.style.color = 'var(--accent-cyan)';
+                selectRoverBtn.style.animation = 'none';
+                return;
+            }
+
+            // GRID DRAWING
             if (!drawModeActive || !isDrawing) return;
             isDrawing = false;
-            gridEnd = getMousePos(overlayCanvas, e);
+            gridEnd = pos;
             currentGridEnd = null;
-            const tX = Math.min(gridStart.x, gridEnd.x), tY = Math.min(gridStart.y, gridEnd.y);
-            const bX = Math.max(gridStart.x, gridEnd.x), bY = Math.max(gridStart.y, gridEnd.y);
+            const tX = Math.min(gridStart.x, pos.x), tY = Math.min(gridStart.y, pos.y);
+            const bX = Math.max(gridStart.x, pos.x), bY = Math.max(gridStart.y, pos.y);
             gridStart = {x: tX, y: tY}; gridEnd = {x: bX, y: bY};
             gridStartLabel.textContent = `${Math.round(tX)} , ${Math.round(tY)}`;
             gridEndLabel.textContent = `${Math.round(bX)} , ${Math.round(bY)}`;
@@ -1506,6 +1670,7 @@
         });
 
         overlayCanvas.addEventListener('mouseleave', (e) => {
+            if (isSelectingRover) { isSelectingRover = false; roverSelectCurrent = null; }
             if (isDrawing) { isDrawing = false; gridEnd = getMousePos(overlayCanvas, e); currentGridEnd = null; }
         });
 
@@ -1535,10 +1700,41 @@
             // 2. Physical floor lines (AI)
             if (aiEnabled && cvPhysicalLines.length > 0 && cvOriginalSize) drawPhysicalLines();
 
-            // 3. Rover tracking
+            // 3. Draw rover selection box (while user is dragging)
+            if (isSelectingRover && roverSelectStart && roverSelectCurrent) {
+                ctx.save();
+                ctx.strokeStyle = '#4ade80';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                const sx = roverSelectStart.x, sy = roverSelectStart.y;
+                const sw = roverSelectCurrent.x - sx, sh = roverSelectCurrent.y - sy;
+                ctx.strokeRect(sx, sy, sw, sh);
+                ctx.fillStyle = 'rgba(74, 222, 128, 0.1)';
+                ctx.fillRect(sx, sy, sw, sh);
+                ctx.setLineDash([]);
+                ctx.font = 'bold 12px "JetBrains Mono", monospace';
+                ctx.fillStyle = '#4ade80';
+                ctx.fillText('🎯 Select Rover', sx + 4, sy - 6);
+                ctx.restore();
+            }
+
+            // 4. Calibration prompt (if not calibrated and no selection in progress)
+            if (!isCalibrated && !isSelectingRover && !selectRoverMode) {
+                ctx.save();
+                ctx.font = 'bold 14px "JetBrains Mono", monospace';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(overlayCanvas.width/2 - 160, 8, 320, 30);
+                ctx.fillStyle = '#fbbf24';
+                ctx.textAlign = 'center';
+                ctx.fillText('⚠️ Click "SELECT ROVER" to calibrate', overlayCanvas.width/2, 28);
+                ctx.textAlign = 'left';
+                ctx.restore();
+            }
+
+            // 5. Rover tracking
             drawRoverTracking();
 
-            // 4. Fire AI pipeline
+            // 6. Fire AI pipeline
             if (aiEnabled) captureAndSendFrame();
             else { cvDetections = []; cvPhysicalLines = []; }
         }

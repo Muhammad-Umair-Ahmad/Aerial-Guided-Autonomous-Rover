@@ -88,33 +88,44 @@ async def websocket_endpoint(websocket: WebSocket):
 async def cv_endpoint(websocket: WebSocket):
     """
     WebSocket endpoint for Computer Vision processing.
-    Receives base64 encoded frames from the dashboard, processes them
-    through the ObjectDetector, and returns bounding box JSON.
+    Handles two message types:
+      1. "calibrate" - user selected the rover, initialize tracker
+      2. regular frames - run detection/tracking and return results
     """
     await websocket.accept()
     print("[CV] Dashboard connected to AI vision pipeline.")
     
     try:
         while True:
-            # Receive base64 string from client
             message = await websocket.receive_text()
             
             try:
                 data = json.loads(message)
+
+                # CALIBRATION MESSAGE
+                if data.get("type") == "calibrate":
+                    image_b64 = data.get("image", "")
+                    roi = data.get("roi")
+
+                    if ai_detector and image_b64 and roi:
+                        result = ai_detector.calibrate(image_b64, roi)
+                        await websocket.send_json({"type": "calibrate_result", **result})
+                    else:
+                        await websocket.send_json({"type": "calibrate_result", "error": "Missing image or ROI"})
+                    continue
+
+                # REGULAR DETECTION FRAME
                 image_b64 = data.get("image", "")
-                threshold = data.get("threshold", 0.5)
+                threshold = data.get("threshold", 0.4)
                 
                 if ai_detector and image_b64:
-                    # Run detection
                     results = ai_detector.detect_objects(image_b64, confidence_threshold=threshold)
                     
-                    # 1. Run geofencing logic
                     grid = data.get("grid")
                     if grid and len(results.get("detections", [])) > 0:
                         instruction = ai_detector.check_geofence(results["detections"], grid)
                         results["instruction"] = instruction
 
-                    # 2. Run physical floor tile detection (if requested by frontend)
                     if data.get("auto_grid") == True:
                         line_results = ai_detector.detect_floor_grid(image_b64)
                         results["physical_lines"] = line_results.get("lines", [])
@@ -130,3 +141,4 @@ async def cv_endpoint(websocket: WebSocket):
         print("[CV] Dashboard disconnected from AI vision pipeline.")
     except Exception as e:
         print(f"[CV] Error in CV pipeline: {e}")
+
