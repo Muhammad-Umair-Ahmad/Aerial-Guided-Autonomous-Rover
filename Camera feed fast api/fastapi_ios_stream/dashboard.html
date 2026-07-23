@@ -166,7 +166,6 @@
             overflow: hidden;
         }
         .video-container video {
-            /* Always display as landscape: if phone sends portrait, we rotate+scale it */
             width: 100%; height: 100%; object-fit: contain; display: block;
         }
 
@@ -365,7 +364,7 @@
         <section class="card feed-area" id="feedCard">
             <div class="card-header">
                 <div class="card-header-left">
-                    <div class="card-icon feed">📡</div>
+                    <div class="card-icon feed">&#x1F4E1;</div>
                     <span class="card-title" id="feedTitle">Satellite Camera Feed</span>
                 </div>
                 <span class="card-badge badge-offline" id="feedBadge">OFFLINE</span>
@@ -376,7 +375,7 @@
                 <div class="video-overlay-bl"></div>
                 <div class="video-overlay-br"></div>
 
-                <!-- ══ SOLID OUT-OF-BOUNDS ALERT ══ -->
+                <!-- OUT-OF-BOUNDS ALERT -->
                 <div id="outOfBoundsAlert" style="
                     display: none; position: absolute;
                     top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -390,7 +389,7 @@
                     letter-spacing: 2px;
                     animation: alertPulse 0.6s ease-in-out infinite alternate;
                 ">
-                    ⚠️ BOUNDARY VIOLATION!<br>
+                    &#x26A0;&#xFE0F; BOUNDARY VIOLATION!<br>
                     <span id="outOfBoundsDir" style="font-size:16px; font-weight:600; letter-spacing:1px;">DO NOT MOVE OUTSIDE</span>
                 </div>
 
@@ -402,7 +401,7 @@
                 </style>
 
                 <div class="video-hud-top">
-                    <span class="hud-tag" id="hudRes">-- × --</span>
+                    <span class="hud-tag" id="hudRes">-- &times; --</span>
                     <span class="hud-tag rec" id="hudRec" style="display:none;">LIVE</span>
                 </div>
                 <div class="video-hud-bottom">
@@ -416,7 +415,7 @@
 
                 <!-- Waiting for iPhone state -->
                 <div class="feed-empty" id="feedEmpty">
-                    <div class="feed-empty-icon waiting-spinner">📱</div>
+                    <div class="feed-empty-icon waiting-spinner">&#x1F4F1;</div>
                     <h3>Waiting for iPhone Feed</h3>
                     <p>Open the broadcaster page on your iPhone and tap <strong>Start Broadcast</strong></p>
                     <div class="step-list">
@@ -435,7 +434,7 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-header-left">
-                        <div class="card-icon telemetry">📊</div>
+                        <div class="card-icon telemetry">&#x1F4CA;</div>
                         <span class="card-title">Feed Telemetry</span>
                     </div>
                 </div>
@@ -463,14 +462,14 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-header-left">
-                        <div class="card-icon system">⚙️</div>
+                        <div class="card-icon system">&#x2699;&#xFE0F;</div>
                         <span class="card-title">Connection</span>
                     </div>
                 </div>
                 <div class="conn-info">
                     <div class="conn-row">
                         <span class="conn-label">WebSocket</span>
-                        <span class="conn-value waiting" id="connWs">Connecting…</span>
+                        <span class="conn-value waiting" id="connWs">Connecting&hellip;</span>
                     </div>
                     <div class="conn-row">
                         <span class="conn-label">WebRTC</span>
@@ -491,15 +490,22 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-header-left">
-                        <div class="card-icon system">🧠</div>
-                        <span class="card-title">AI Vision Model</span>
+                        <div class="card-icon system">&#x1F9E0;</div>
+                        <span class="card-title">AI Vision</span>
                     </div>
                 </div>
                 <div class="conn-info" style="padding: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span class="conn-label">Enable Object Detection</span>
+                        <span class="conn-label">Rover Detection (YOLO)</span>
                         <label class="switch">
                             <input type="checkbox" id="aiToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span class="conn-label" style="color: var(--accent-purple);">General Detection (objects)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="generalDetToggle">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -510,19 +516,10 @@
                         </div>
                         <input type="range" id="aiThreshold" min="0" max="100" value="40" style="width: 100%; cursor: pointer;">
                     </div>
-                    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--glass-border);">
-                        <button id="selectRoverBtn" style="
-                            width: 100%; padding: 10px; border-radius: 8px; cursor: pointer;
-                            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(45, 212, 191, 0.15));
-                            border: 1px solid var(--accent-cyan); color: var(--accent-cyan);
-                            font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;
-                            letter-spacing: 0.5px; transition: all 0.2s ease;
-                        " onmouseover="this.style.background='linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(45, 212, 191, 0.3))'" onmouseout="this.style.background='linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(45, 212, 191, 0.15))'">
-                            🎯 SELECT ROVER
-                        </button>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                            <span class="conn-label">Tracking Status</span>
-                            <span class="conn-value waiting" id="calibStatus">Not calibrated</span>
+                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--glass-border);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="conn-label">Rover Model</span>
+                            <span class="conn-value connected" id="modelStatus">best.pt (YOLO)</span>
                         </div>
                     </div>
                 </div>
@@ -532,7 +529,7 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-header-left">
-                        <div class="card-icon controls">📐</div>
+                        <div class="card-icon controls">&#x1F4D0;</div>
                         <span class="card-title">Geofence Grid</span>
                     </div>
                 </div>
@@ -574,7 +571,7 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-header-left">
-                        <div class="card-icon controls">🎛️</div>
+                        <div class="card-icon controls">&#x1F39B;&#xFE0F;</div>
                         <span class="card-title">Feed Sources</span>
                     </div>
                 </div>
@@ -582,15 +579,15 @@
                     <button class="source-option active" id="srcPhone">
                         <div class="source-radio"></div>
                         <div class="source-info">
-                            <h4>🛰️ Satellite Camera</h4>
+                            <h4>&#x1F6F0;&#xFE0F; Satellite Camera</h4>
                             <p>Overhead WebRTC stream</p>
                         </div>
                     </button>
                     <button class="source-option disabled" id="srcSatellite">
                         <div class="source-radio"></div>
                         <div class="source-info">
-                            <h4>🛰️ Satellite View</h4>
-                            <p>Coming soon — overhead iPhone</p>
+                            <h4>&#x1F6F0;&#xFE0F; Satellite View</h4>
+                            <p>Coming soon</p>
                         </div>
                     </button>
                 </div>
@@ -600,7 +597,7 @@
             <div class="card" style="flex:1; display:flex; flex-direction:column;">
                 <div class="card-header">
                     <div class="card-header-left">
-                        <div class="card-icon feed">📋</div>
+                        <div class="card-icon feed">&#x1F4CB;</div>
                         <span class="card-title">System Log</span>
                     </div>
                 </div>
@@ -654,6 +651,7 @@
         const aiToggle = document.getElementById('aiToggle');
         const aiThreshold = document.getElementById('aiThreshold');
         const aiThreshLabel = document.getElementById('aiThreshLabel');
+        const generalDetToggle = document.getElementById('generalDetToggle');
         const gridToggle = document.getElementById('gridToggle');
         const autoGridToggle = document.getElementById('autoGridToggle');
         const gridStartLabel = document.getElementById('gridStartLabel');
@@ -664,61 +662,9 @@
         let aiEnabled = true;
         let lastFrameTime = 0;
         let cvDetections = [];
+        let cvGeneralDetections = [];
         let cvPhysicalLines = [];
         let cvOriginalSize = null;
-        let isCalibrated = false;
-
-        // ── Rover selection state ────────────────────────────────
-        let selectRoverMode = false;
-        let roverSelectStart = null;
-        let roverSelectEnd = null;
-        let roverSelectCurrent = null;
-        let isSelectingRover = false;
-
-        // ══════════════════════════════════════════════════
-        //  AI / CV PIPELINE + SAFE ZONE
-        // ══════════════════════════════════════════════════
-        
-        // Calculate default Safe Zone (10% margin from edges)
-        function getSafeZone() {
-            if (!video.videoWidth) return null;
-            
-            const videoRatio = video.videoWidth / video.videoHeight;
-            const containerRatio = video.clientWidth / video.clientHeight;
-            
-            let drawWidth = video.clientWidth;
-            let drawHeight = video.clientHeight;
-            let offsetX = 0;
-            let offsetY = 0;
-
-            if (videoRatio > containerRatio) {
-                drawHeight = video.clientWidth / videoRatio;
-                offsetY = (video.clientHeight - drawHeight) / 2;
-            } else {
-                drawWidth = video.clientHeight * videoRatio;
-                offsetX = (video.clientWidth - drawWidth) / 2;
-            }
-            
-            const marginX = drawWidth * 0.1;
-            const marginY = drawHeight * 0.1;
-            
-            // Return coordinates mapped to the original video size for the backend
-            const scaleX = cvOriginalSize ? (cvOriginalSize.width / drawWidth) : (video.videoWidth / drawWidth);
-            const scaleY = cvOriginalSize ? (cvOriginalSize.height / drawHeight) : (video.videoHeight / drawHeight);
-            
-            return {
-                x1: (offsetX + marginX) * scaleX,
-                y1: (offsetY + marginY) * scaleY,
-                x2: (offsetX + drawWidth - marginX) * scaleX,
-                y2: (offsetY + drawHeight - marginY) * scaleY,
-                ui: { // For rendering on UI
-                    x: offsetX + marginX,
-                    y: offsetY + marginY,
-                    w: drawWidth - (marginX * 2),
-                    h: drawHeight - (marginY * 2)
-                }
-            };
-        }
 
         // ══════════════════════════════════════════════════
         //  CLOCK
@@ -770,7 +716,7 @@
 
             log(`Connecting to signaling server...`, 'info');
             setStatus('connecting', 'CONNECTING');
-            setConnValue(connWs, 'Connecting…', 'waiting');
+            setConnValue(connWs, 'Connecting...', 'waiting');
 
             ws = new WebSocket(wsUrl);
 
@@ -778,7 +724,7 @@
                 log('WebSocket connected to signaling server', 'success');
                 setConnValue(connWs, 'Connected', 'connected');
                 setStatus('connecting', 'WAITING FOR IPHONE');
-                setConnValue(connPhone, 'Waiting…', 'waiting');
+                setConnValue(connPhone, 'Waiting...', 'waiting');
                 if (wsReconnectTimer) {
                     clearTimeout(wsReconnectTimer);
                     wsReconnectTimer = null;
@@ -790,28 +736,21 @@
                     const data = JSON.parse(msg.data);
 
                     if (data.offer) {
-                        // iPhone sent an offer — it's broadcasting!
-                        log('iPhone offer received — negotiating stream…', 'info');
+                        log('iPhone offer received - negotiating stream...', 'info');
                         setConnValue(connPhone, 'Detected!', 'connected');
-                        setConnValue(connRtc, 'Negotiating…', 'waiting');
+                        setConnValue(connRtc, 'Negotiating...', 'waiting');
 
-                        // Clean up old connection if any
                         if (peerConnection) {
                             peerConnection.close();
                             peerConnection = null;
                         }
 
                         peerConnection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-
-                        // Tell WebRTC we want to receive video
                         peerConnection.addTransceiver('video', { direction: 'recvonly' });
 
-                        // When we receive the video track
                         peerConnection.ontrack = (e) => {
                             log('Video track received from iPhone!', 'success');
-                            log(`Track kind: ${e.track.kind}, streams: ${e.streams.length}`, 'info');
 
-                            // Use the stream if available, otherwise create one from the track
                             let stream;
                             if (e.streams && e.streams[0]) {
                                 stream = e.streams[0];
@@ -823,12 +762,10 @@
                             video.style.display = 'block';
                             feedEmpty.style.display = 'none';
 
-                            // Force play the video
                             video.play().then(() => {
                                 log('Video playback started', 'success');
                             }).catch(err => {
                                 log(`Autoplay blocked: ${err.message}`, 'warn');
-                                // Try muted autoplay as fallback
                                 video.muted = true;
                                 video.play().catch(() => {});
                             });
@@ -846,24 +783,21 @@
 
                             startFpsMonitor();
 
-                            // Get resolution when video loads
                             video.onloadedmetadata = () => {
                                 const w = video.videoWidth;
                                 const h = video.videoHeight;
-                                hudRes.textContent = `${w} × ${h}`;
-                                telRes.textContent = `${w}×${h}`;
-                                log(`Stream resolution: ${w}×${h}`, 'info');
+                                hudRes.textContent = `${w} x ${h}`;
+                                telRes.textContent = `${w}x${h}`;
+                                log(`Stream resolution: ${w}x${h}`, 'info');
                             };
                         };
 
-                        // Send ICE candidates back to iPhone
                         peerConnection.onicecandidate = (e) => {
                             if (e.candidate && ws.readyState === WebSocket.OPEN) {
                                 ws.send(JSON.stringify({ candidate: e.candidate }));
                             }
                         };
 
-                        // Monitor ICE connection state
                         peerConnection.oniceconnectionstatechange = () => {
                             const state = peerConnection.iceConnectionState;
                             setConnValue(connIce, state);
@@ -874,13 +808,12 @@
                             }
                         };
 
-                        // Set remote description and create answer
                         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
                         const answer = await peerConnection.createAnswer();
                         await peerConnection.setLocalDescription(answer);
                         ws.send(JSON.stringify({ answer: answer }));
 
-                        log('Answer sent to iPhone — waiting for stream…', 'info');
+                        log('Answer sent to iPhone - waiting for stream...', 'info');
 
                     } else if (data.candidate && peerConnection) {
                         await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
@@ -901,7 +834,6 @@
 
                 if (feedActive) handleStreamLost();
 
-                // Auto-reconnect after 3 seconds
                 wsReconnectTimer = setTimeout(() => {
                     log('Attempting reconnect...', 'info');
                     connectWebSocket();
@@ -922,7 +854,7 @@
             feedBadge.textContent = 'OFFLINE';
             feedBadge.className = 'card-badge badge-offline';
             hudRec.style.display = 'none';
-            hudRes.textContent = '-- × --';
+            hudRes.textContent = '-- x --';
             hudFps.textContent = '-- FPS';
             hudSource.textContent = 'SRC: AWAITING';
             telFps.textContent = '--';
@@ -934,7 +866,7 @@
             setConnValue(connPhone, 'Lost', 'error');
             setStatus('connecting', 'WAITING FOR IPHONE');
 
-            log('iPhone stream lost — waiting for reconnection…', 'warn');
+            log('iPhone stream lost - waiting for reconnection...', 'warn');
         }
 
         // ══════════════════════════════════════════════════
@@ -943,12 +875,10 @@
         function startFpsMonitor() {
             let frames = 0;
             let lastTime = performance.now();
-            let lastDecodedFrames = 0;
 
             function tick() {
                 if (!feedActive) return;
 
-                // Use requestVideoFrameCallback if available for accurate FPS
                 totalFrames++;
                 frames++;
                 const now = performance.now();
@@ -998,13 +928,32 @@
         aiToggle.onchange = (e) => {
             aiEnabled = e.target.checked;
             if (aiEnabled) {
-                log('AI Vision Model enabled', 'info');
+                log('AI Rover Detection enabled', 'info');
                 connectCVWebSocket();
             } else {
-                log('AI Vision Model disabled', 'warn');
+                log('AI Rover Detection disabled', 'warn');
                 if (cvWs) { cvWs.close(); cvWs = null; }
                 cvDetections = [];
+                cvGeneralDetections = [];
                 cvPhysicalLines = [];
+            }
+        };
+
+        // General detection toggle
+        generalDetToggle.onchange = (e) => {
+            const enabled = e.target.checked;
+            if (enabled) {
+                log('General object detection enabled (bottles, umbrellas, etc.)', 'info');
+            } else {
+                log('General object detection disabled', 'info');
+                cvGeneralDetections = [];
+            }
+            // Send toggle to backend
+            if (cvWs && cvWs.readyState === WebSocket.OPEN) {
+                cvWs.send(JSON.stringify({
+                    type: 'set_general_detection',
+                    enabled: enabled
+                }));
             }
         };
 
@@ -1018,25 +967,19 @@
 
             cvWs.onopen = () => {
                 log('Connected to AI processing backend', 'success');
+                // Send current general detection state
+                cvWs.send(JSON.stringify({
+                    type: 'set_general_detection',
+                    enabled: generalDetToggle.checked
+                }));
             };
 
             cvWs.onmessage = (msg) => {
                 try {
                     const data = JSON.parse(msg.data);
 
-                    // Handle calibration result
-                    if (data.type === 'calibrate_result') {
-                        const calibStatus = document.getElementById('calibStatus');
-                        if (data.status === 'calibrated') {
-                            isCalibrated = true;
-                            calibStatus.textContent = '✅ Tracking';
-                            calibStatus.className = 'conn-value connected';
-                            log(`Rover calibrated! Size: ${data.rover_size.width}×${data.rover_size.height}px`, 'success');
-                        } else {
-                            calibStatus.textContent = '❌ Failed';
-                            calibStatus.className = 'conn-value error';
-                            log(`Calibration failed: ${data.error}`, 'error');
-                        }
+                    // Handle general detection status
+                    if (data.type === 'general_detection_status') {
                         return;
                     }
 
@@ -1045,7 +988,13 @@
                     } else if (data.detections !== undefined) {
                         cvDetections = data.detections;
                         cvOriginalSize = data.original_size;
-                        if (data.calibrated !== undefined) isCalibrated = data.calibrated;
+                        
+                        // General detections (optional)
+                        if (data.general_detections) {
+                            cvGeneralDetections = data.general_detections;
+                        } else {
+                            cvGeneralDetections = [];
+                        }
                         
                         if (data.physical_lines) {
                             cvPhysicalLines = data.physical_lines;
@@ -1100,25 +1049,18 @@
             lastFrameTime = now;
 
             try {
-                // ── Image capture ────────────────────────────────────────────
-                // Send at NATIVE resolution — the frame is already tiny (270×488)
-                // and downscaling hurts YOLO accuracy. No scaling needed.
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width  = video.videoWidth;
                 tempCanvas.height = video.videoHeight;
                 const tempCtx = tempCanvas.getContext('2d');
                 tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-                const b64 = tempCanvas.toDataURL('image/jpeg', 0.90); // 90% quality
+                const b64 = tempCanvas.toDataURL('image/jpeg', 0.90);
 
                 const threshold = parseInt(aiThreshold.value) / 100.0;
 
-                // ── Grid coordinate mapping ────────────────────────────────────
-                // The backend operates in video pixel space (e.g. 270x488).
-                // We convert canvas coords → video coords via getVideoRect().
                 let activeGrid = null;
 
                 if (gridStart && gridEnd) {
-                    // Manual grid: map canvas pixels -> video pixels
                     const r = getVideoRect();
                     if (r && video.videoWidth) {
                         const sx = video.videoWidth  / r.w;
@@ -1131,7 +1073,6 @@
                         };
                     }
                 } else {
-                    // Default safe zone: 88% of the video frame (purely in video pixel space)
                     if (video.videoWidth && video.videoHeight) {
                         const mx = video.videoWidth  * 0.06;
                         const my = video.videoHeight * 0.06;
@@ -1159,33 +1100,19 @@
         function drawPhysicalLines() {
             if (!aiEnabled || cvPhysicalLines.length === 0 || !cvOriginalSize || !feedActive) return;
             
-            const videoRatio = video.videoWidth / video.videoHeight;
-            const containerRatio = video.clientWidth / video.clientHeight;
-            
-            let drawWidth = video.clientWidth;
-            let drawHeight = video.clientHeight;
-            let offsetX = 0;
-            let offsetY = 0;
-
-            if (videoRatio > containerRatio) {
-                drawHeight = video.clientWidth / videoRatio;
-                offsetY = (video.clientHeight - drawHeight) / 2;
-            } else {
-                drawWidth = video.clientHeight * videoRatio;
-                offsetX = (video.clientWidth - drawWidth) / 2;
-            }
-
-            const scaleX = drawWidth / cvOriginalSize.width;
-            const scaleY = drawHeight / cvOriginalSize.height;
+            const r = getVideoRect();
+            if (!r) return;
+            const scaleX = r.w / cvOriginalSize.width;
+            const scaleY = r.h / cvOriginalSize.height;
 
             ctx.lineWidth = 1;
-            ctx.strokeStyle = 'rgba(167, 139, 250, 0.6)'; // Purple lines for AI detected floor grid
+            ctx.strokeStyle = 'rgba(167, 139, 250, 0.6)';
 
             cvPhysicalLines.forEach(line => {
-                const x1 = offsetX + (line.x1 * scaleX);
-                const y1 = offsetY + (line.y1 * scaleY);
-                const x2 = offsetX + (line.x2 * scaleX);
-                const y2 = offsetY + (line.y2 * scaleY);
+                const x1 = r.x + (line.x1 * scaleX);
+                const y1 = r.y + (line.y1 * scaleY);
+                const x2 = r.x + (line.x2 * scaleX);
+                const y2 = r.y + (line.y2 * scaleY);
                 
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
@@ -1196,15 +1123,8 @@
 
         // ════════════════════════════════════════════════════════════════
         //  DRAWING FUNCTIONS
-        //  Overlay renders in this order:
-        //  1. Safe Zone / Grid Boundary  (Thick RED solid lines)
-        //  2. Lawnmower Sweep Lanes       (YELLOW horizontal lines)
-        //  3. Start Position Marker       (Green circle, bottom-left)
-        //  4. Physical Floor Lines        (Purple, if AI-detected)
-        //  5. Rover Tracking Box          (Bright RED box + crosshair)
         // ════════════════════════════════════════════════════════════════
 
-        // Helper: compute the actual pixel rect of video inside the container
         function getVideoRect() {
             if (!video.videoWidth || !video.videoHeight) return null;
             const cw = video.clientWidth;
@@ -1217,50 +1137,23 @@
             return { x: ox, y: oy, w: dw, h: dh };
         }
 
-        // Convert a canvas pixel position back to backend coord space
-        function canvasToBackend(cx, cy) {
-            const r = getVideoRect();
-            if (!r || !cvOriginalSize) return null;
-            return {
-                x: ((cx - r.x) / r.w) * cvOriginalSize.width,
-                y: ((cy - r.y) / r.h) * cvOriginalSize.height
-            };
-        }
-
-        // Convert a backend coord to canvas pixel
-        function backendToCanvas(bx, by) {
-            const r = getVideoRect();
-            if (!r || !cvOriginalSize) return null;
-            return {
-                x: r.x + (bx / cvOriginalSize.width)  * r.w,
-                y: r.y + (by / cvOriginalSize.height) * r.h
-            };
-        }
-
         // ── 1. RED BOUNDARY ──────────────────────────────────────────────
         function drawBoundary(gx1, gy1, gx2, gy2) {
-            // Thick solid red outer boundary (HARD WALL)
             ctx.save();
             ctx.lineWidth = 5;
             ctx.strokeStyle = '#ff2222';
             ctx.setLineDash([]);
             ctx.strokeRect(gx1, gy1, gx2 - gx1, gy2 - gy1);
 
-            // Very subtle red tint inside
             ctx.fillStyle = 'rgba(255, 30, 30, 0.04)';
             ctx.fillRect(gx1, gy1, gx2 - gx1, gy2 - gy1);
 
-            // Corner accents
-            const cs = 18; // corner size
+            const cs = 18;
             ctx.lineWidth = 4;
             ctx.strokeStyle = '#ffffff';
-            // TL
             ctx.beginPath(); ctx.moveTo(gx1, gy1+cs); ctx.lineTo(gx1, gy1); ctx.lineTo(gx1+cs, gy1); ctx.stroke();
-            // TR
             ctx.beginPath(); ctx.moveTo(gx2-cs, gy1); ctx.lineTo(gx2, gy1); ctx.lineTo(gx2, gy1+cs); ctx.stroke();
-            // BR
             ctx.beginPath(); ctx.moveTo(gx2, gy2-cs); ctx.lineTo(gx2, gy2); ctx.lineTo(gx2-cs, gy2); ctx.stroke();
-            // BL
             ctx.beginPath(); ctx.moveTo(gx1+cs, gy2); ctx.lineTo(gx1, gy2); ctx.lineTo(gx1, gy2-cs); ctx.stroke();
             ctx.restore();
         }
@@ -1272,7 +1165,7 @@
             const h = gy2 - gy1;
             ctx.save();
             ctx.lineWidth = 1.5;
-            ctx.strokeStyle = '#ffe600'; // Bright yellow
+            ctx.strokeStyle = '#ffe600';
             ctx.setLineDash([8, 6]);
             for (let i = 1; i < rows; i++) {
                 const y = gy1 + (h / rows) * i;
@@ -1281,7 +1174,6 @@
                 ctx.lineTo(gx2 - 4, y);
                 ctx.stroke();
             }
-            // Draw zigzag arrows inside lanes to indicate direction
             ctx.lineWidth = 1;
             ctx.strokeStyle = 'rgba(255, 230, 0, 0.5)';
             ctx.setLineDash([]);
@@ -1294,7 +1186,6 @@
                 ctx.moveTo(goRight ? ax1 : ax2, laneY);
                 ctx.lineTo(goRight ? ax2 : ax1, laneY);
                 ctx.stroke();
-                // arrowhead
                 const ah = 6;
                 const tip = goRight ? ax2 : ax1;
                 const dir = goRight ? -1 : 1;
@@ -1314,7 +1205,6 @@
             ctx.save();
             const mx = gx1 + 40;
             const my = gy2 - 20;
-            // Green circle
             ctx.beginPath();
             ctx.arc(mx - 16, my - 2, 8, 0, Math.PI * 2);
             ctx.fillStyle = '#22c55e';
@@ -1322,7 +1212,6 @@
             ctx.lineWidth = 2;
             ctx.strokeStyle = '#fff';
             ctx.stroke();
-            // Label box
             ctx.fillStyle = '#22c55e';
             ctx.roundRect(mx - 6, my - 12, 60, 20, 4);
             ctx.fill();
@@ -1332,7 +1221,7 @@
             ctx.restore();
         }
 
-        // ── 4. ROVER TRACKING BOX ────────────────────────────────────────
+        // ── 4. ROVER TRACKING BOX (YOLO Detection) ──────────────────────
         function drawRoverTracking() {
             if (!aiEnabled || cvDetections.length === 0 || !cvOriginalSize || !feedActive) return;
             const r = getVideoRect();
@@ -1340,7 +1229,6 @@
             const scaleX = r.w / cvOriginalSize.width;
             const scaleY = r.h / cvOriginalSize.height;
 
-            // Backend now returns exactly 1 detection — the best one
             const rover = cvDetections[0];
             if (!rover) return;
 
@@ -1352,36 +1240,29 @@
             const cx = x + bw / 2;
             const cy = y + bh / 2;
 
-            // Determine badge text and colour
-            let badgeColor = '#00e676';  // green = actively tracking
-            let badgeText  = '🚗 ROVER';
-            const lbl = rover.label || '';
-            const isStale = lbl.includes('last seen');
-            if (lbl.includes('tracking'))      { badgeColor = '#00e676'; badgeText = '🎯 ROVER (tracking)'; }
-            else if (lbl.includes('re-acq'))   { badgeColor = '#ff9800'; badgeText = '🔄 ROVER (re-acquired)'; }
-            else if (lbl.includes('last seen')){ badgeColor = '#ff6600'; badgeText = '⏳ ROVER (last seen)'; }
-            else if (lbl.includes('UNCALIB'))   { badgeColor = '#ff4444'; badgeText = `⚠️ ${lbl}`; }
-            else                               { badgeText = `🚗 ${lbl}`; }
+            // Color based on confidence
+            const conf = rover.confidence || 0;
+            let badgeColor = '#00e676';  // green for high confidence
+            if (conf < 0.5) badgeColor = '#ff9800';      // orange for medium
+            if (conf < 0.3) badgeColor = '#ff4444';       // red for low
+            const badgeText = rover.label || 'ROVER';
 
             ctx.save();
 
-            // Reduce opacity for stale (last-seen) detections
-            if (isStale) ctx.globalAlpha = 0.5;
-
-            // ── Outer glow (soft shadow for visibility) ──────────────────
+            // ── Outer glow ──
             ctx.shadowColor   = badgeColor;
             ctx.shadowBlur    = 12;
 
-            // ── Solid thick bounding box ──────────────────────────────────
+            // ── Bounding box ──
             ctx.lineWidth   = 3.5;
             ctx.strokeStyle = badgeColor;
             ctx.setLineDash([]);
             ctx.strokeRect(x, y, bw, bh);
 
-            // ── Corner accents (L-shape corners) ─────────────────────────
+            // ── Corner accents ──
             ctx.shadowBlur  = 0;
             ctx.lineWidth   = 3;
-            const cs = Math.min(16, bw * 0.25, bh * 0.25);   // corner size
+            const cs = Math.min(16, bw * 0.25, bh * 0.25);
             [[x, y, 1, 1], [x + bw, y, -1, 1], [x, y + bh, 1, -1], [x + bw, y + bh, -1, -1]].forEach(([px, py, dx, dy]) => {
                 ctx.beginPath();
                 ctx.moveTo(px + dx * cs, py);
@@ -1390,21 +1271,21 @@
                 ctx.stroke();
             });
 
-            // ── Center crosshair ─────────────────────────────────────────
+            // ── Center crosshair ──
             ctx.lineWidth   = 1.5;
             ctx.strokeStyle = 'rgba(255,255,255,0.9)';
             const arm = 14;
             ctx.beginPath(); ctx.moveTo(cx - arm, cy); ctx.lineTo(cx + arm, cy); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(cx, cy - arm); ctx.lineTo(cx, cy + arm); ctx.stroke();
 
-            // ── Pulsing center dot ────────────────────────────────────────
+            // ── Pulsing center dot ──
             const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.008);
             ctx.fillStyle = badgeColor;
             ctx.globalAlpha = pulse;
             ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
             ctx.globalAlpha = 1.0;
 
-            // ── Label badge (top-left of box) ─────────────────────────────
+            // ── Label badge ──
             ctx.shadowBlur = 0;
             ctx.font       = 'bold 11px "JetBrains Mono", monospace';
             const tw       = ctx.measureText(badgeText).width;
@@ -1412,24 +1293,23 @@
             const badgeY   = y - badgeH;
 
             ctx.fillStyle = badgeColor;
-            // Rounded rect badge
-            const bx = x, by = badgeY, brd = 4;
+            const bx2 = x, by2 = badgeY, brd = 4;
             ctx.beginPath();
-            ctx.moveTo(bx + brd, by); ctx.lineTo(bx + tw + 12 - brd, by);
-            ctx.arcTo(bx + tw + 12, by, bx + tw + 12, by + brd, brd);
-            ctx.lineTo(bx + tw + 12, by + badgeH - brd);
-            ctx.arcTo(bx + tw + 12, by + badgeH, bx + tw + 12 - brd, by + badgeH, brd);
-            ctx.lineTo(bx + brd, by + badgeH);
-            ctx.arcTo(bx, by + badgeH, bx, by + badgeH - brd, brd);
-            ctx.lineTo(bx, by + brd);
-            ctx.arcTo(bx, by, bx + brd, by, brd);
+            ctx.moveTo(bx2 + brd, by2); ctx.lineTo(bx2 + tw + 12 - brd, by2);
+            ctx.arcTo(bx2 + tw + 12, by2, bx2 + tw + 12, by2 + brd, brd);
+            ctx.lineTo(bx2 + tw + 12, by2 + badgeH - brd);
+            ctx.arcTo(bx2 + tw + 12, by2 + badgeH, bx2 + tw + 12 - brd, by2 + badgeH, brd);
+            ctx.lineTo(bx2 + brd, by2 + badgeH);
+            ctx.arcTo(bx2, by2 + badgeH, bx2, by2 + badgeH - brd, brd);
+            ctx.lineTo(bx2, by2 + brd);
+            ctx.arcTo(bx2, by2, bx2 + brd, by2, brd);
             ctx.closePath();
             ctx.fill();
 
-            ctx.fillStyle = (badgeColor === '#00e676' || badgeColor === '#00d2ff') ? '#000' : '#fff';
-            ctx.fillText(badgeText, bx + 6, by + 14);
+            ctx.fillStyle = (badgeColor === '#00e676') ? '#000' : '#fff';
+            ctx.fillText(badgeText, bx2 + 6, by2 + 14);
 
-            // ── Pixel coordinate readout (bottom of box) ──────────────────
+            // ── Coordinate readout ──
             ctx.font      = '9px "JetBrains Mono", monospace';
             ctx.fillStyle = 'rgba(255,255,255,0.75)';
             ctx.fillText(
@@ -1440,8 +1320,41 @@
             ctx.restore();
         }
 
+        // ── 5. GENERAL DETECTIONS (purple boxes) ─────────────────────────
+        function drawGeneralDetections() {
+            if (!aiEnabled || cvGeneralDetections.length === 0 || !cvOriginalSize || !feedActive) return;
+            const r = getVideoRect();
+            if (!r) return;
+            const scaleX = r.w / cvOriginalSize.width;
+            const scaleY = r.h / cvOriginalSize.height;
+
+            cvGeneralDetections.forEach(det => {
+                const b  = det.box;
+                const x  = r.x + b.x * scaleX;
+                const y  = r.y + b.y * scaleY;
+                const bw = b.width  * scaleX;
+                const bh = b.height * scaleY;
+
+                ctx.save();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#a78bfa';
+                ctx.setLineDash([4, 3]);
+                ctx.strokeRect(x, y, bw, bh);
+                ctx.setLineDash([]);
+
+                // Label
+                ctx.font = 'bold 10px "JetBrains Mono", monospace';
+                const label = det.label || 'object';
+                const tw = ctx.measureText(label).width;
+                ctx.fillStyle = 'rgba(167, 139, 250, 0.85)';
+                ctx.fillRect(x, y - 16, tw + 8, 16);
+                ctx.fillStyle = '#fff';
+                ctx.fillText(label, x + 4, y - 4);
+                ctx.restore();
+            });
+        }
+
         function drawSafeZoneOverlay() {
-            // Default safe zone = 88% of actual video rect
             const r = getVideoRect();
             if (!r) return;
             const mx = r.w * 0.06, my = r.h * 0.06;
@@ -1454,12 +1367,11 @@
             if (gridStart && (gridEnd || currentGridEnd)) {
                 const endPos = currentGridEnd || gridEnd;
                 ctx.lineWidth = 4;
-                ctx.strokeStyle = '#ff0000'; // Thick Red
+                ctx.strokeStyle = '#ff0000';
                 
                 const w = endPos.x - gridStart.x;
                 const h = endPos.y - gridStart.y;
                 
-                // Draw main boundary
                 ctx.setLineDash([5, 5]);
                 ctx.strokeRect(gridStart.x, gridStart.y, w, h);
                 ctx.fillStyle = 'rgba(255, 0, 0, 0.05)';
@@ -1467,14 +1379,12 @@
                 
                 ctx.setLineDash([]);
                 
-                // Draw internal subdivisions to simulate physical tiles / lawnmower sweep pattern
-                ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)'; // Cyan internal lines
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
                 ctx.lineWidth = 1;
                 
                 const cols = 3;
                 const rows = 3;
                 
-                // Vertical lines
                 for(let i=1; i<cols; i++) {
                     const x = gridStart.x + (w / cols) * i;
                     ctx.beginPath();
@@ -1483,7 +1393,6 @@
                     ctx.stroke();
                 }
                 
-                // Horizontal lines (Sweep Paths)
                 for(let i=1; i<rows; i++) {
                     const y = gridStart.y + (h / rows) * i;
                     ctx.beginPath();
@@ -1492,7 +1401,6 @@
                     ctx.stroke();
                 }
                 
-                // Draw crosshairs at corners
                 ctx.fillStyle = '#fb923c';
                 ctx.beginPath(); ctx.arc(gridStart.x, gridStart.y, 4, 0, 2*Math.PI); ctx.fill();
                 ctx.beginPath(); ctx.arc(endPos.x, endPos.y, 4, 0, 2*Math.PI); ctx.fill();
@@ -1500,75 +1408,9 @@
         }
 
         // ══════════════════════════════════════════════════
-        //  INIT — auto connect on page load
+        //  INIT
         // ══════════════════════════════════════════════════
         log('Dashboard initialized', 'info');
-
-        // ════════════════════════════════════════════════════════════════
-        //  SELECT ROVER MODE
-        // ════════════════════════════════════════════════════════════════
-        const selectRoverBtn = document.getElementById('selectRoverBtn');
-
-        selectRoverBtn.onclick = () => {
-            if (!feedActive) {
-                log('Cannot select rover — no video feed active', 'error');
-                return;
-            }
-            selectRoverMode = !selectRoverMode;
-            if (selectRoverMode) {
-                // Disable grid drawing while selecting rover
-                drawModeActive = false;
-                gridToggle.checked = false;
-                overlayCanvas.style.cursor = 'crosshair';
-                overlayCanvas.style.pointerEvents = 'auto';
-                selectRoverBtn.textContent = '🎯 CLICK & DRAG ON ROVER...';
-                selectRoverBtn.style.borderColor = '#4ade80';
-                selectRoverBtn.style.color = '#4ade80';
-                selectRoverBtn.style.animation = 'pulse-dot 1.5s ease-in-out infinite';
-                log('🎯 Draw a box around the rover in the video feed', 'info');
-            } else {
-                overlayCanvas.style.cursor = 'default';
-                selectRoverBtn.textContent = '🎯 SELECT ROVER';
-                selectRoverBtn.style.borderColor = 'var(--accent-cyan)';
-                selectRoverBtn.style.color = 'var(--accent-cyan)';
-                selectRoverBtn.style.animation = 'none';
-            }
-        };
-
-        function sendCalibration(canvasBox) {
-            if (!cvWs || cvWs.readyState !== WebSocket.OPEN || !feedActive) return;
-
-            // Convert canvas coordinates to video pixel coordinates
-            const r = getVideoRect();
-            if (!r || !video.videoWidth) return;
-
-            const sx = video.videoWidth  / r.w;
-            const sy = video.videoHeight / r.h;
-            const roi = {
-                x:      Math.max(0, (canvasBox.x - r.x) * sx),
-                y:      Math.max(0, (canvasBox.y - r.y) * sy),
-                width:  canvasBox.w * sx,
-                height: canvasBox.h * sy
-            };
-
-            // Capture current frame
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width  = video.videoWidth;
-            tempCanvas.height = video.videoHeight;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-            const b64 = tempCanvas.toDataURL('image/jpeg', 0.95);
-
-            cvWs.send(JSON.stringify({
-                type: 'calibrate',
-                image: b64,
-                roi: roi
-            }));
-
-            log(`Calibrating rover at (${Math.round(roi.x)},${Math.round(roi.y)}) ${Math.round(roi.width)}×${Math.round(roi.height)}px...`, 'info');
-            document.getElementById('calibStatus').textContent = 'Calibrating...';
-            document.getElementById('calibStatus').className = 'conn-value waiting';
-        }
 
         // ════════════════════════════════════════════════════════════════
         //  GRID MOUSE EVENTS
@@ -1581,14 +1423,8 @@
 
         gridToggle.onchange = (e) => {
             drawModeActive = e.target.checked;
-            if (drawModeActive) {
-                selectRoverMode = false;
-                selectRoverBtn.textContent = '🎯 SELECT ROVER';
-                selectRoverBtn.style.borderColor = 'var(--accent-cyan)';
-                selectRoverBtn.style.color = 'var(--accent-cyan)';
-                selectRoverBtn.style.animation = 'none';
-            }
             overlayCanvas.style.cursor = drawModeActive ? 'crosshair' : 'default';
+            overlayCanvas.style.pointerEvents = drawModeActive ? 'auto' : 'none';
             log(drawModeActive ? 'Grid drawing mode ON. Click and drag.' : 'Grid drawing mode OFF.', 'info');
         };
 
@@ -1598,19 +1434,8 @@
         }
 
         overlayCanvas.addEventListener('mousedown', (e) => {
-            const pos = getMousePos(overlayCanvas, e);
-
-            // ROVER SELECTION MODE
-            if (selectRoverMode) {
-                isSelectingRover = true;
-                roverSelectStart = pos;
-                roverSelectEnd = null;
-                roverSelectCurrent = pos;
-                return;
-            }
-
-            // GRID DRAWING MODE
             if (!drawModeActive) return;
+            const pos = getMousePos(overlayCanvas, e);
             isDrawing = true;
             gridStart = pos;
             gridEnd = null; currentGridEnd = pos;
@@ -1619,46 +1444,14 @@
         });
 
         overlayCanvas.addEventListener('mousemove', (e) => {
-            const pos = getMousePos(overlayCanvas, e);
-            if (isSelectingRover) { roverSelectCurrent = pos; return; }
             if (!drawModeActive || !isDrawing) return;
-            currentGridEnd = pos;
+            currentGridEnd = getMousePos(overlayCanvas, e);
         });
 
         overlayCanvas.addEventListener('mouseup', (e) => {
-            const pos = getMousePos(overlayCanvas, e);
-
-            // ROVER SELECTION — send calibration
-            if (isSelectingRover && roverSelectStart) {
-                isSelectingRover = false;
-                roverSelectEnd = pos;
-                roverSelectCurrent = null;
-
-                const tX = Math.min(roverSelectStart.x, pos.x);
-                const tY = Math.min(roverSelectStart.y, pos.y);
-                const bX = Math.max(roverSelectStart.x, pos.x);
-                const bY = Math.max(roverSelectStart.y, pos.y);
-                const w = bX - tX, h = bY - tY;
-
-                if (w > 10 && h > 10) {
-                    sendCalibration({ x: tX, y: tY, w: w, h: h });
-                } else {
-                    log('Selection too small — draw a bigger box', 'warn');
-                }
-
-                // Exit selection mode
-                selectRoverMode = false;
-                overlayCanvas.style.cursor = 'default';
-                selectRoverBtn.textContent = '🎯 RE-SELECT ROVER';
-                selectRoverBtn.style.borderColor = 'var(--accent-cyan)';
-                selectRoverBtn.style.color = 'var(--accent-cyan)';
-                selectRoverBtn.style.animation = 'none';
-                return;
-            }
-
-            // GRID DRAWING
             if (!drawModeActive || !isDrawing) return;
             isDrawing = false;
+            const pos = getMousePos(overlayCanvas, e);
             gridEnd = pos;
             currentGridEnd = null;
             const tX = Math.min(gridStart.x, pos.x), tY = Math.min(gridStart.y, pos.y);
@@ -1666,11 +1459,10 @@
             gridStart = {x: tX, y: tY}; gridEnd = {x: bX, y: bY};
             gridStartLabel.textContent = `${Math.round(tX)} , ${Math.round(tY)}`;
             gridEndLabel.textContent = `${Math.round(bX)} , ${Math.round(bY)}`;
-            log(`Grid set: (${Math.round(tX)},${Math.round(tY)}) → (${Math.round(bX)},${Math.round(bY)})`, 'success');
+            log(`Grid set: (${Math.round(tX)},${Math.round(tY)}) -> (${Math.round(bX)},${Math.round(bY)})`, 'success');
         });
 
         overlayCanvas.addEventListener('mouseleave', (e) => {
-            if (isSelectingRover) { isSelectingRover = false; roverSelectCurrent = null; }
             if (isDrawing) { isDrawing = false; gridEnd = getMousePos(overlayCanvas, e); currentGridEnd = null; }
         });
 
@@ -1700,47 +1492,19 @@
             // 2. Physical floor lines (AI)
             if (aiEnabled && cvPhysicalLines.length > 0 && cvOriginalSize) drawPhysicalLines();
 
-            // 3. Draw rover selection box (while user is dragging)
-            if (isSelectingRover && roverSelectStart && roverSelectCurrent) {
-                ctx.save();
-                ctx.strokeStyle = '#4ade80';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([6, 4]);
-                const sx = roverSelectStart.x, sy = roverSelectStart.y;
-                const sw = roverSelectCurrent.x - sx, sh = roverSelectCurrent.y - sy;
-                ctx.strokeRect(sx, sy, sw, sh);
-                ctx.fillStyle = 'rgba(74, 222, 128, 0.1)';
-                ctx.fillRect(sx, sy, sw, sh);
-                ctx.setLineDash([]);
-                ctx.font = 'bold 12px "JetBrains Mono", monospace';
-                ctx.fillStyle = '#4ade80';
-                ctx.fillText('🎯 Select Rover', sx + 4, sy - 6);
-                ctx.restore();
-            }
-
-            // 4. Calibration prompt (if not calibrated and no selection in progress)
-            if (!isCalibrated && !isSelectingRover && !selectRoverMode) {
-                ctx.save();
-                ctx.font = 'bold 14px "JetBrains Mono", monospace';
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                ctx.fillRect(overlayCanvas.width/2 - 160, 8, 320, 30);
-                ctx.fillStyle = '#fbbf24';
-                ctx.textAlign = 'center';
-                ctx.fillText('⚠️ Click "SELECT ROVER" to calibrate', overlayCanvas.width/2, 28);
-                ctx.textAlign = 'left';
-                ctx.restore();
-            }
-
-            // 5. Rover tracking
+            // 3. Rover tracking (YOLO)
             drawRoverTracking();
 
-            // 6. Fire AI pipeline
+            // 4. General detections (optional)
+            drawGeneralDetections();
+
+            // 5. Fire AI pipeline
             if (aiEnabled) captureAndSendFrame();
-            else { cvDetections = []; cvPhysicalLines = []; }
+            else { cvDetections = []; cvGeneralDetections = []; cvPhysicalLines = []; }
         }
 
         log('Dashboard initialized', 'info');
-        log('AGRA Mission Control v2.0 — Aerial Recon Ready', 'success');
+        log('AGRA Mission Control v3.0 - YOLO Rover Detection Active', 'success');
         setStatus('offline', 'STANDBY');
         connectWebSocket();
         requestAnimationFrame(renderLoop);

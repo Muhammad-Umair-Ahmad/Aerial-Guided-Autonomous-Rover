@@ -1,0 +1,5 @@
+names:
+- Rover
+nc: 1
+train: D:/PAI_LAB_INTERNSHIP/Rover_detection.yolov12/train/images
+val: D:/PAI_LAB_INTERNSHIP/Rover_detection.yolov12/val/images

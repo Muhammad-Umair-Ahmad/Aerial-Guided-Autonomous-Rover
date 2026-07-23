@@ -88,9 +88,9 @@ async def websocket_endpoint(websocket: WebSocket):
 async def cv_endpoint(websocket: WebSocket):
     """
     WebSocket endpoint for Computer Vision processing.
-    Handles two message types:
-      1. "calibrate" - user selected the rover, initialize tracker
-      2. regular frames - run detection/tracking and return results
+    Handles message types:
+      - "set_general_detection" - toggle general object detection on/off
+      - regular frames - run detection and return results
     """
     await websocket.accept()
     print("[CV] Dashboard connected to AI vision pipeline.")
@@ -102,16 +102,15 @@ async def cv_endpoint(websocket: WebSocket):
             try:
                 data = json.loads(message)
 
-                # CALIBRATION MESSAGE
-                if data.get("type") == "calibrate":
-                    image_b64 = data.get("image", "")
-                    roi = data.get("roi")
-
-                    if ai_detector and image_b64 and roi:
-                        result = ai_detector.calibrate(image_b64, roi)
-                        await websocket.send_json({"type": "calibrate_result", **result})
-                    else:
-                        await websocket.send_json({"type": "calibrate_result", "error": "Missing image or ROI"})
+                # TOGGLE GENERAL DETECTION
+                if data.get("type") == "set_general_detection":
+                    enabled = data.get("enabled", False)
+                    if ai_detector:
+                        ai_detector.set_general_detection(enabled)
+                        await websocket.send_json({
+                            "type": "general_detection_status",
+                            "enabled": enabled
+                        })
                     continue
 
                 # REGULAR DETECTION FRAME
@@ -141,4 +140,3 @@ async def cv_endpoint(websocket: WebSocket):
         print("[CV] Dashboard disconnected from AI vision pipeline.")
     except Exception as e:
         print(f"[CV] Error in CV pipeline: {e}")
-
