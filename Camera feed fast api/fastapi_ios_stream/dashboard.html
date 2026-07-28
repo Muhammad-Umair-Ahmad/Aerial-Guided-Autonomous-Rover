@@ -267,35 +267,6 @@
         .conn-value.waiting { color: var(--accent-orange); }
         .conn-value.error { color: var(--accent-red); }
 
-        /* ── FEED SOURCE ── */
-        .source-selector { padding: 8px 12px; }
-
-        .source-option {
-            display: flex; align-items: center; gap: 10px;
-            padding: 8px 10px; border-radius: 8px;
-            border: 1px solid var(--glass-border); background: transparent;
-            cursor: pointer; transition: all 0.2s ease;
-            margin-bottom: 6px; width: 100%; text-align: left;
-            font-family: 'Inter', sans-serif; color: var(--text-primary);
-        }
-        .source-option:hover { background: rgba(56, 189, 248, 0.04); border-color: rgba(56, 189, 248, 0.2); }
-        .source-option.active { background: rgba(56, 189, 248, 0.08); border-color: var(--accent-cyan); box-shadow: 0 0 20px rgba(56, 189, 248, 0.08); }
-        .source-option.disabled { opacity: 0.35; pointer-events: none; }
-
-        .source-radio {
-            width: 16px; height: 16px; border-radius: 50%;
-            border: 2px solid var(--text-muted); flex-shrink: 0;
-            position: relative; transition: all 0.2s ease;
-        }
-        .source-option.active .source-radio { border-color: var(--accent-cyan); }
-        .source-option.active .source-radio::after {
-            content: ''; position: absolute; top: 3px; left: 3px;
-            width: 6px; height: 6px; border-radius: 50%; background: var(--accent-cyan);
-        }
-
-        .source-info h4 { font-size: 12px; font-weight: 600; margin-bottom: 1px; }
-        .source-info p { font-size: 10px; color: var(--text-muted); }
-
         /* ── LOG ── */
         .log-container { padding: 6px 10px; flex: 1; overflow-y: auto; min-height: 0; }
         .log-container::-webkit-scrollbar { width: 4px; }
@@ -458,34 +429,6 @@
                 </div>
             </div>
 
-            <!-- ── CONNECTION STATUS ── -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <div class="card-icon system">&#x2699;&#xFE0F;</div>
-                        <span class="card-title">Connection</span>
-                    </div>
-                </div>
-                <div class="conn-info">
-                    <div class="conn-row">
-                        <span class="conn-label">WebSocket</span>
-                        <span class="conn-value waiting" id="connWs">Connecting&hellip;</span>
-                    </div>
-                    <div class="conn-row">
-                        <span class="conn-label">WebRTC</span>
-                        <span class="conn-value waiting" id="connRtc">Waiting</span>
-                    </div>
-                    <div class="conn-row">
-                        <span class="conn-label">iPhone</span>
-                        <span class="conn-value waiting" id="connPhone">Not detected</span>
-                    </div>
-                    <div class="conn-row">
-                        <span class="conn-label">ICE State</span>
-                        <span class="conn-value" id="connIce">--</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- ── AI VISION ── -->
             <div class="card">
                 <div class="card-header">
@@ -502,55 +445,24 @@
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span class="conn-label" style="color: var(--accent-purple);">General Detection (objects)</span>
-                        <label class="switch">
-                            <input type="checkbox" id="generalDetToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                            <span class="conn-label">Confidence Threshold</span>
-                            <span class="conn-value" id="aiThreshLabel">40%</span>
-                        </div>
-                        <input type="range" id="aiThreshold" min="0" max="100" value="40" style="width: 100%; cursor: pointer;">
-                    </div>
-                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--glass-border);">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="conn-label">Rover Model</span>
-                            <span class="conn-value connected" id="modelStatus">best.pt (YOLO)</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <!-- ── GEOFENCE & GRID ── -->
+            <!-- ── TERRAIN GRID ── -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-header-left">
                         <div class="card-icon controls">&#x1F4D0;</div>
-                        <span class="card-title">Geofence Grid</span>
+                        <span class="card-title">Terrain Grid</span>
                     </div>
                 </div>
                 <div class="conn-info" style="padding: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span class="conn-label">Enable Grid Drawing</span>
+                        <span class="conn-label">Draw Boundary (Red)</span>
                         <label class="switch">
                             <input type="checkbox" id="gridToggle">
                             <span class="slider"></span>
                         </label>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span class="conn-label" style="color: var(--accent-orange);">Auto-Detect Floor Tiles (AI)</span>
-                        <label class="switch">
-                            <input type="checkbox" id="autoGridToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
-                        <span class="conn-label">Sweep Rows:</span>
-                        <input type="number" id="sweepRows" value="5" min="2" max="20" style="width:60px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:var(--accent-cyan); border-radius:4px; padding:2px 6px; font-family:'JetBrains Mono',monospace; font-size:12px;">
                     </div>
                     <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
                         <span class="conn-label">Top-Left:</span>
@@ -560,36 +472,22 @@
                         <span class="conn-label">Bottom-Right:</span>
                         <span class="conn-value orange" id="gridEndLabel">-- , --</span>
                     </div>
+                    <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <span class="conn-label">Grid Size:</span>
+                        <div style="display: flex; gap: 4px; align-items: center;">
+                            <input type="number" id="gridRowsInput" value="3" min="1" max="20" style="width:40px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:var(--text-primary); border-radius:4px; padding:2px; font-family:'JetBrains Mono',monospace; text-align:center;">
+                            <span style="color:var(--text-muted); font-size:10px;">x</span>
+                            <input type="number" id="gridColsInput" value="2" min="1" max="20" style="width:40px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:var(--text-primary); border-radius:4px; padding:2px; font-family:'JetBrains Mono',monospace; text-align:center;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <button id="btnGenerateGrid" style="flex:1; padding: 6px; background: var(--accent-cyan); color: #000; border: none; border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">Generate Grid</button>
+                        <button id="btnClearGrid" style="flex:1; padding: 6px; background: rgba(248, 113, 113, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">Clear Grid</button>
+                    </div>
                     <div>
                         <span class="conn-label" style="display:block; margin-bottom: 4px;">Rover ESP32 IP:</span>
                         <input type="text" id="espIpInput" placeholder="192.168.x.x" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
                     </div>
-                </div>
-            </div>
-
-            <!-- ── FEED SOURCES ── -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <div class="card-icon controls">&#x1F39B;&#xFE0F;</div>
-                        <span class="card-title">Feed Sources</span>
-                    </div>
-                </div>
-                <div class="source-selector">
-                    <button class="source-option active" id="srcPhone">
-                        <div class="source-radio"></div>
-                        <div class="source-info">
-                            <h4>&#x1F6F0;&#xFE0F; Satellite Camera</h4>
-                            <p>Overhead WebRTC stream</p>
-                        </div>
-                    </button>
-                    <button class="source-option disabled" id="srcSatellite">
-                        <div class="source-radio"></div>
-                        <div class="source-info">
-                            <h4>&#x1F6F0;&#xFE0F; Satellite View</h4>
-                            <p>Coming soon</p>
-                        </div>
-                    </button>
                 </div>
             </div>
 
@@ -642,20 +540,16 @@
         const telRes = document.getElementById('telRes');
         const telUptime = document.getElementById('telUptime');
         const telFrames = document.getElementById('telFrames');
-        const connWs = document.getElementById('connWs');
-        const connRtc = document.getElementById('connRtc');
-        const connPhone = document.getElementById('connPhone');
-        const connIce = document.getElementById('connIce');
         const overlayCanvas = document.getElementById('overlayCanvas');
         const ctx = overlayCanvas.getContext('2d');
         const aiToggle = document.getElementById('aiToggle');
-        const aiThreshold = document.getElementById('aiThreshold');
-        const aiThreshLabel = document.getElementById('aiThreshLabel');
-        const generalDetToggle = document.getElementById('generalDetToggle');
         const gridToggle = document.getElementById('gridToggle');
-        const autoGridToggle = document.getElementById('autoGridToggle');
         const gridStartLabel = document.getElementById('gridStartLabel');
         const gridEndLabel = document.getElementById('gridEndLabel');
+        const gridRowsInput = document.getElementById('gridRowsInput');
+        const gridColsInput = document.getElementById('gridColsInput');
+        const btnGenerateGrid = document.getElementById('btnGenerateGrid');
+        const btnClearGrid = document.getElementById('btnClearGrid');
         const espIpInput = document.getElementById('espIpInput');
 
         let cvWs = null;
@@ -663,8 +557,10 @@
         let lastFrameTime = 0;
         let cvDetections = [];
         let cvGeneralDetections = [];
-        let cvPhysicalLines = [];
         let cvOriginalSize = null;
+        
+        let terrainGridData = null; // Holds generated grid cells and path
+        let generalDetToggle = null; // Removed from UI, keep var just in case
 
         // ══════════════════════════════════════════════════
         //  CLOCK
@@ -703,6 +599,7 @@
         }
 
         function setConnValue(el, text, cls) {
+            if (!el) return;
             el.textContent = text;
             el.className = 'conn-value ' + (cls || '');
         }
@@ -716,15 +613,12 @@
 
             log(`Connecting to signaling server...`, 'info');
             setStatus('connecting', 'CONNECTING');
-            setConnValue(connWs, 'Connecting...', 'waiting');
 
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
                 log('WebSocket connected to signaling server', 'success');
-                setConnValue(connWs, 'Connected', 'connected');
                 setStatus('connecting', 'WAITING FOR IPHONE');
-                setConnValue(connPhone, 'Waiting...', 'waiting');
                 if (wsReconnectTimer) {
                     clearTimeout(wsReconnectTimer);
                     wsReconnectTimer = null;
@@ -737,8 +631,6 @@
 
                     if (data.offer) {
                         log('iPhone offer received - negotiating stream...', 'info');
-                        setConnValue(connPhone, 'Detected!', 'connected');
-                        setConnValue(connRtc, 'Negotiating...', 'waiting');
 
                         if (peerConnection) {
                             peerConnection.close();
@@ -779,7 +671,6 @@
                             hudRec.style.display = 'flex';
                             hudSource.textContent = 'SRC: iPHONE';
                             setStatus('online', 'LIVE');
-                            setConnValue(connRtc, 'Connected', 'connected');
 
                             startFpsMonitor();
 
@@ -800,7 +691,6 @@
 
                         peerConnection.oniceconnectionstatechange = () => {
                             const state = peerConnection.iceConnectionState;
-                            setConnValue(connIce, state);
                             log(`ICE state: ${state}`, state === 'connected' || state === 'completed' ? 'success' : state === 'failed' ? 'error' : 'info');
 
                             if (state === 'disconnected' || state === 'failed') {
@@ -825,12 +715,10 @@
 
             ws.onerror = (err) => {
                 log('WebSocket error', 'error');
-                setConnValue(connWs, 'Error', 'error');
             };
 
             ws.onclose = () => {
                 log('WebSocket disconnected', 'warn');
-                setConnValue(connWs, 'Disconnected', 'error');
 
                 if (feedActive) handleStreamLost();
 
@@ -862,8 +750,6 @@
             telUptime.textContent = '00:00';
             telFrames.textContent = '0';
 
-            setConnValue(connRtc, 'Disconnected', 'error');
-            setConnValue(connPhone, 'Lost', 'error');
             setStatus('connecting', 'WAITING FOR IPHONE');
 
             log('iPhone stream lost - waiting for reconnection...', 'warn');
@@ -921,10 +807,6 @@
         // ══════════════════════════════════════════════════
         //  AI VISION / CV PIPELINE
         // ══════════════════════════════════════════════════
-        aiThreshold.oninput = (e) => {
-            aiThreshLabel.textContent = `${e.target.value}%`;
-        };
-
         aiToggle.onchange = (e) => {
             aiEnabled = e.target.checked;
             if (aiEnabled) {
@@ -935,25 +817,6 @@
                 if (cvWs) { cvWs.close(); cvWs = null; }
                 cvDetections = [];
                 cvGeneralDetections = [];
-                cvPhysicalLines = [];
-            }
-        };
-
-        // General detection toggle
-        generalDetToggle.onchange = (e) => {
-            const enabled = e.target.checked;
-            if (enabled) {
-                log('General object detection enabled (bottles, umbrellas, etc.)', 'info');
-            } else {
-                log('General object detection disabled', 'info');
-                cvGeneralDetections = [];
-            }
-            // Send toggle to backend
-            if (cvWs && cvWs.readyState === WebSocket.OPEN) {
-                cvWs.send(JSON.stringify({
-                    type: 'set_general_detection',
-                    enabled: enabled
-                }));
             }
         };
 
@@ -967,11 +830,6 @@
 
             cvWs.onopen = () => {
                 log('Connected to AI processing backend', 'success');
-                // Send current general detection state
-                cvWs.send(JSON.stringify({
-                    type: 'set_general_detection',
-                    enabled: generalDetToggle.checked
-                }));
             };
 
             cvWs.onmessage = (msg) => {
@@ -994,12 +852,6 @@
                             cvGeneralDetections = data.general_detections;
                         } else {
                             cvGeneralDetections = [];
-                        }
-                        
-                        if (data.physical_lines) {
-                            cvPhysicalLines = data.physical_lines;
-                        } else {
-                            cvPhysicalLines = [];
                         }
                         
                         const hudInstruction = document.getElementById('hudInstruction');
@@ -1056,7 +908,7 @@
                 tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
                 const b64 = tempCanvas.toDataURL('image/jpeg', 0.90);
 
-                const threshold = parseInt(aiThreshold.value) / 100.0;
+                const threshold = 0.4;
 
                 let activeGrid = null;
 
@@ -1089,36 +941,12 @@
                     image: b64,
                     threshold: threshold,
                     grid: activeGrid,
-                    auto_grid: autoGridToggle.checked,
+                    auto_grid: false,
                     esp_ip: espIpInput.value || null
                 }));
             } catch (e) {
                 console.error('Frame capture error:', e);
             }
-        }
-
-        function drawPhysicalLines() {
-            if (!aiEnabled || cvPhysicalLines.length === 0 || !cvOriginalSize || !feedActive) return;
-            
-            const r = getVideoRect();
-            if (!r) return;
-            const scaleX = r.w / cvOriginalSize.width;
-            const scaleY = r.h / cvOriginalSize.height;
-
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = 'rgba(167, 139, 250, 0.6)';
-
-            cvPhysicalLines.forEach(line => {
-                const x1 = r.x + (line.x1 * scaleX);
-                const y1 = r.y + (line.y1 * scaleY);
-                const x2 = r.x + (line.x2 * scaleX);
-                const y2 = r.y + (line.y2 * scaleY);
-                
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
-            });
         }
 
         // ════════════════════════════════════════════════════════════════
@@ -1135,90 +963,6 @@
             if (vr > cr) { dw = cw; dh = cw / vr; ox = 0; oy = (ch - dh) / 2; }
             else          { dh = ch; dw = ch * vr; ox = (cw - dw) / 2; oy = 0; }
             return { x: ox, y: oy, w: dw, h: dh };
-        }
-
-        // ── 1. RED BOUNDARY ──────────────────────────────────────────────
-        function drawBoundary(gx1, gy1, gx2, gy2) {
-            ctx.save();
-            ctx.lineWidth = 5;
-            ctx.strokeStyle = '#ff2222';
-            ctx.setLineDash([]);
-            ctx.strokeRect(gx1, gy1, gx2 - gx1, gy2 - gy1);
-
-            ctx.fillStyle = 'rgba(255, 30, 30, 0.04)';
-            ctx.fillRect(gx1, gy1, gx2 - gx1, gy2 - gy1);
-
-            const cs = 18;
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = '#ffffff';
-            ctx.beginPath(); ctx.moveTo(gx1, gy1+cs); ctx.lineTo(gx1, gy1); ctx.lineTo(gx1+cs, gy1); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(gx2-cs, gy1); ctx.lineTo(gx2, gy1); ctx.lineTo(gx2, gy1+cs); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(gx2, gy2-cs); ctx.lineTo(gx2, gy2); ctx.lineTo(gx2-cs, gy2); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(gx1+cs, gy2); ctx.lineTo(gx1, gy2); ctx.lineTo(gx1, gy2-cs); ctx.stroke();
-            ctx.restore();
-        }
-
-        // ── 2. YELLOW SWEEP LANES ─────────────────────────────────────────
-        function drawSweepLanes(gx1, gy1, gx2, gy2) {
-            const sweepRowsEl = document.getElementById('sweepRows');
-            const rows = parseInt(sweepRowsEl ? sweepRowsEl.value : 5) || 5;
-            const h = gy2 - gy1;
-            ctx.save();
-            ctx.lineWidth = 1.5;
-            ctx.strokeStyle = '#ffe600';
-            ctx.setLineDash([8, 6]);
-            for (let i = 1; i < rows; i++) {
-                const y = gy1 + (h / rows) * i;
-                ctx.beginPath();
-                ctx.moveTo(gx1 + 4, y);
-                ctx.lineTo(gx2 - 4, y);
-                ctx.stroke();
-            }
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = 'rgba(255, 230, 0, 0.5)';
-            ctx.setLineDash([]);
-            const arrowSpacing = (gx2 - gx1) / 4;
-            for (let i = 0; i < rows; i++) {
-                const laneY = gy1 + (h / rows) * i + (h / rows) / 2;
-                const goRight = (i % 2 === 0);
-                const ax1 = gx1 + 10, ax2 = gx2 - 10;
-                ctx.beginPath();
-                ctx.moveTo(goRight ? ax1 : ax2, laneY);
-                ctx.lineTo(goRight ? ax2 : ax1, laneY);
-                ctx.stroke();
-                const ah = 6;
-                const tip = goRight ? ax2 : ax1;
-                const dir = goRight ? -1 : 1;
-                ctx.beginPath();
-                ctx.moveTo(tip, laneY);
-                ctx.lineTo(tip + dir*ah, laneY - ah/2);
-                ctx.lineTo(tip + dir*ah, laneY + ah/2);
-                ctx.closePath();
-                ctx.fillStyle = 'rgba(255,230,0,0.7)';
-                ctx.fill();
-            }
-            ctx.restore();
-        }
-
-        // ── 3. START MARKER ──────────────────────────────────────────────
-        function drawStartMarker(gx1, gy2) {
-            ctx.save();
-            const mx = gx1 + 40;
-            const my = gy2 - 20;
-            ctx.beginPath();
-            ctx.arc(mx - 16, my - 2, 8, 0, Math.PI * 2);
-            ctx.fillStyle = '#22c55e';
-            ctx.fill();
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#fff';
-            ctx.stroke();
-            ctx.fillStyle = '#22c55e';
-            ctx.roundRect(mx - 6, my - 12, 60, 20, 4);
-            ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 11px JetBrains Mono';
-            ctx.fillText('START', mx - 2, my + 3);
-            ctx.restore();
         }
 
         // ── 4. ROVER TRACKING BOX (YOLO Detection) ──────────────────────
@@ -1354,15 +1098,6 @@
             });
         }
 
-        function drawSafeZoneOverlay() {
-            const r = getVideoRect();
-            if (!r) return;
-            const mx = r.w * 0.06, my = r.h * 0.06;
-            drawBoundary(r.x + mx, r.y + my, r.x + r.w - mx, r.y + r.h - my);
-            drawSweepLanes(r.x + mx, r.y + my, r.x + r.w - mx, r.y + r.h - my);
-            drawStartMarker(r.x + mx, r.y + r.h - my);
-        }
-
         function drawGridOverlay() {
             if (gridStart && (gridEnd || currentGridEnd)) {
                 const endPos = currentGridEnd || gridEnd;
@@ -1379,32 +1114,221 @@
                 
                 ctx.setLineDash([]);
                 
-                ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-                ctx.lineWidth = 1;
-                
-                const cols = 3;
-                const rows = 3;
-                
-                for(let i=1; i<cols; i++) {
-                    const x = gridStart.x + (w / cols) * i;
-                    ctx.beginPath();
-                    ctx.moveTo(x, gridStart.y);
-                    ctx.lineTo(x, gridStart.y + h);
-                    ctx.stroke();
-                }
-                
-                for(let i=1; i<rows; i++) {
-                    const y = gridStart.y + (h / rows) * i;
-                    ctx.beginPath();
-                    ctx.moveTo(gridStart.x, y);
-                    ctx.lineTo(gridStart.x + w, y);
-                    ctx.stroke();
-                }
-                
                 ctx.fillStyle = '#fb923c';
                 ctx.beginPath(); ctx.arc(gridStart.x, gridStart.y, 4, 0, 2*Math.PI); ctx.fill();
                 ctx.beginPath(); ctx.arc(endPos.x, endPos.y, 4, 0, 2*Math.PI); ctx.fill();
             }
+        }
+
+        // ══════════════════════════════════════════════════
+        //  GRID GENERATION & RENDERING LOGIC
+        // ══════════════════════════════════════════════════
+
+        btnGenerateGrid.onclick = () => {
+            if (!gridStart || !gridEnd) {
+                alert("Please draw the red boundary first (Enable 'Draw Boundary (Red)', click and drag).");
+                return;
+            }
+            const rows = parseInt(gridRowsInput.value) || 3;
+            const cols = parseInt(gridColsInput.value) || 2;
+            
+            const w = gridEnd.x - gridStart.x;
+            const h = gridEnd.y - gridStart.y;
+            const cellW = w / cols;
+            const cellH = h / rows;
+            
+            let cells = [];
+            let pathWaypoints = [];
+            
+            // Generate cells
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    cells.push({
+                        r: r, c: c,
+                        x: gridStart.x + c * cellW,
+                        y: gridStart.y + r * cellH,
+                        w: cellW, h: cellH
+                    });
+                }
+            }
+            
+            // Boustrophedon path generation (start bottom-left)
+            let order = 1;
+            for (let r = rows - 1; r >= 0; r--) {
+                const rowFromBottom = (rows - 1) - r;
+                const goRight = (rowFromBottom % 2 === 0);
+                
+                for (let i = 0; i < cols; i++) {
+                    const c = goRight ? i : (cols - 1 - i);
+                    const cellIndex = r * cols + c;
+                    const cell = cells[cellIndex];
+                    pathWaypoints.push({
+                        x: cell.x + cell.w / 2,
+                        y: cell.y + cell.h / 2,
+                        cellIdx: cellIndex,
+                        order: order++
+                    });
+                }
+            }
+            
+            terrainGridData = {
+                rows, cols, cells, pathWaypoints, cellW, cellH
+            };
+            
+            drawModeActive = false;
+            gridToggle.checked = false;
+            overlayCanvas.style.cursor = 'default';
+            overlayCanvas.style.pointerEvents = 'none';
+            log(`Generated ${cols}x${rows} terrain grid with full coverage path`, 'success');
+        };
+
+        btnClearGrid.onclick = () => {
+            terrainGridData = null;
+            gridStart = null;
+            gridEnd = null;
+            currentGridEnd = null;
+            gridStartLabel.textContent = `-- , --`;
+            gridEndLabel.textContent = `-- , --`;
+            log('Grid cleared', 'info');
+        };
+
+        function drawTerrainGridAndPath() {
+            if (!terrainGridData) return;
+            const { rows, cols, cells, pathWaypoints } = terrainGridData;
+            
+            ctx.save();
+            
+            // Draw red boundary
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ff2222';
+            ctx.setLineDash([]);
+            const tw = gridEnd.x - gridStart.x;
+            const th = gridEnd.y - gridStart.y;
+            ctx.strokeRect(gridStart.x, gridStart.y, tw, th);
+
+            // Draw white corner brackets
+            const cs = 18;
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ffffff';
+            ctx.beginPath(); ctx.moveTo(gridStart.x, gridStart.y+cs); ctx.lineTo(gridStart.x, gridStart.y); ctx.lineTo(gridStart.x+cs, gridStart.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(gridEnd.x-cs, gridStart.y); ctx.lineTo(gridEnd.x, gridStart.y); ctx.lineTo(gridEnd.x, gridStart.y+cs); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(gridEnd.x, gridEnd.y-cs); ctx.lineTo(gridEnd.x, gridEnd.y); ctx.lineTo(gridEnd.x-cs, gridEnd.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(gridStart.x+cs, gridEnd.y); ctx.lineTo(gridStart.x, gridEnd.y); ctx.lineTo(gridStart.x, gridEnd.y-cs); ctx.stroke();
+            
+            // Draw thin white lines dividing the boundary into cells
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 1.5;
+            for(let i=1; i<cols; i++) {
+                const x = gridStart.x + (tw / cols) * i;
+                ctx.beginPath();
+                ctx.moveTo(x, gridStart.y);
+                ctx.lineTo(x, gridStart.y + th);
+                ctx.stroke();
+            }
+            for(let i=1; i<rows; i++) {
+                const y = gridStart.y + (th / rows) * i;
+                ctx.beginPath();
+                ctx.moveTo(gridStart.x, y);
+                ctx.lineTo(gridStart.x + tw, y);
+                ctx.stroke();
+            }
+            
+            // Draw cells
+            cells.forEach((cell, i) => {
+                // Cell Coordinate (A1, etc)
+                ctx.font = '10px "JetBrains Mono", monospace';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                const rowLabel = rows - cell.r; // 1 at bottom
+                const colLabel = String.fromCharCode(65 + cell.c); // A, B, C...
+                ctx.fillText(`${colLabel}${rowLabel}`, cell.x + 5, cell.y + 5);
+            });
+            
+            // Draw Path
+            if (pathWaypoints.length > 0) {
+                ctx.beginPath();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; // Cyan
+                
+                // Animated dash
+                const offset = (Date.now() / 20) % 20;
+                ctx.setLineDash([15, 10]);
+                ctx.lineDashOffset = -offset;
+                
+                pathWaypoints.forEach((wp, i) => {
+                    if (i === 0) ctx.moveTo(wp.x, wp.y);
+                    else ctx.lineTo(wp.x, wp.y);
+                });
+                ctx.stroke();
+                
+                // Draw path arrows and waypoint numbers
+                ctx.setLineDash([]);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                for (let i = 0; i < pathWaypoints.length - 1; i++) {
+                    const wp1 = pathWaypoints[i];
+                    const wp2 = pathWaypoints[i+1];
+                    
+                    // Draw arrow in the middle of the segment
+                    const mx = (wp1.x + wp2.x) / 2;
+                    const my = (wp1.y + wp2.y) / 2;
+                    const angle = Math.atan2(wp2.y - wp1.y, wp2.x - wp1.x);
+                    
+                    ctx.save();
+                    ctx.translate(mx, my);
+                    ctx.rotate(angle);
+                    ctx.fillStyle = 'rgba(56, 189, 248, 1)';
+                    ctx.beginPath();
+                    ctx.moveTo(-6, -6);
+                    ctx.lineTo(6, 0);
+                    ctx.lineTo(-6, 6);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                pathWaypoints.forEach(wp => {
+                    ctx.font = '12px "JetBrains Mono", monospace';
+                    ctx.fillStyle = 'rgba(56, 189, 248, 1)';
+                    ctx.fillText(wp.order, wp.x, wp.y - 15);
+                });
+
+                // Rover START marker
+                const startWp = pathWaypoints[0];
+                const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.005);
+                ctx.beginPath();
+                ctx.arc(startWp.x, startWp.y, 10 * pulse, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(45, 212, 191, 0.8)'; // Teal
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#2dd4bf';
+                ctx.stroke();
+
+                ctx.fillStyle = '#2dd4bf';
+                ctx.fillRect(startWp.x - 20, startWp.y + 10, 40, 16);
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 10px "JetBrains Mono", monospace';
+                ctx.fillText('START', startWp.x, startWp.y + 18);
+
+                // Rover END marker
+                const endWp = pathWaypoints[pathWaypoints.length - 1];
+                ctx.beginPath();
+                ctx.arc(endWp.x, endWp.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#ef4444'; // Red
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#f87171';
+                ctx.stroke();
+
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(endWp.x - 15, endWp.y + 10, 30, 16);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px "JetBrains Mono", monospace';
+                ctx.fillText('END', endWp.x, endWp.y + 18);
+            }
+            
+            ctx.restore();
         }
 
         // ══════════════════════════════════════════════════
@@ -1482,28 +1406,24 @@
 
             const hasManualGrid = gridStart && (gridEnd || currentGridEnd);
 
-            // 1. Boundary + sweep lanes
-            if (hasManualGrid) {
+            // 1. Boundary + terrain grid
+            if (terrainGridData) {
+                drawTerrainGridAndPath();
+            } else if (hasManualGrid) {
                 drawGridOverlay();
-            } else {
-                drawSafeZoneOverlay();
             }
 
-            // 2. Physical floor lines (AI)
-            if (aiEnabled && cvPhysicalLines.length > 0 && cvOriginalSize) drawPhysicalLines();
-
-            // 3. Rover tracking (YOLO)
+            // 2. Rover tracking (YOLO)
             drawRoverTracking();
 
-            // 4. General detections (optional)
+            // 3. General detections (optional)
             drawGeneralDetections();
 
-            // 5. Fire AI pipeline
+            // 4. Fire AI pipeline
             if (aiEnabled) captureAndSendFrame();
-            else { cvDetections = []; cvGeneralDetections = []; cvPhysicalLines = []; }
+            else { cvDetections = []; cvGeneralDetections = []; }
         }
 
-        log('Dashboard initialized', 'info');
         log('AGRA Mission Control v3.0 - YOLO Rover Detection Active', 'success');
         setStatus('offline', 'STANDBY');
         connectWebSocket();
