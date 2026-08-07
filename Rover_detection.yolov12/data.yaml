@@ -1,5 +1,13 @@
-names:
-- Rover
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
 nc: 1
-train: D:/PAI_LAB_INTERNSHIP/Rover_detection.yolov12/train/images
-val: D:/PAI_LAB_INTERNSHIP/Rover_detection.yolov12/val/images
+names: ['Rover-detection']
+
+roboflow:
+  workspace: muhammads-workspace-rmwjl
+  project: rover_detection-2qnhn
+  version: dataset
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/muhammads-workspace-rmwjl/rover_detection-2qnhn/dataset/dataset

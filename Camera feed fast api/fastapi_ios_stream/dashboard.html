@@ -306,6 +306,198 @@
             .sidebar { grid-column: 1; grid-row: 2; }
             .video-container { min-height: 280px; }
         }
+
+/* ══════════════════════════════════════════════════════════════
+   AUTOPILOT PANEL STYLES
+   ══════════════════════════════════════════════════════════════ */
+
+.ap-controls {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.ap-btn {
+    flex: 1;
+    padding: 8px 6px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.3px;
+}
+
+.ap-btn:active { transform: scale(0.95); }
+
+.ap-btn-start {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #052e16;
+}
+.ap-btn-pause {
+    background: linear-gradient(135deg, #fb923c, #f97316);
+    color: #431407;
+}
+.ap-btn-stop {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    color: #450a0a;
+}
+
+.ap-btn:hover { filter: brightness(1.1); }
+
+/* State badge */
+.ap-state-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+}
+
+.ap-state-idle { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+.ap-state-calibrating { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.ap-state-navigating { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+.ap-state-correcting { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+.ap-state-paused { background: rgba(167, 139, 250, 0.15); color: #a78bfa; }
+.ap-state-complete { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+.ap-state-error { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+
+/* Minimap */
+#minimapCanvas {
+    width: 100%;
+    height: 180px;
+    border-radius: 8px;
+    border: 1px solid rgba(56, 189, 248, 0.12);
+    margin: 8px 0;
+}
+
+/* Config sliders */
+.ap-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0;
+}
+
+.ap-slider-row label {
+    flex: 1;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.ap-slider-row input[type=range] {
+    flex: 2;
+    accent-color: #38bdf8;
+    height: 4px;
+}
+
+.ap-slider-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-cyan);
+    min-width: 35px;
+    text-align: right;
+}
+
+/* ESP32 status row */
+.ap-esp32-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+}
+
+.ap-esp32-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f87171;
+    flex-shrink: 0;
+}
+
+/* Progress bar */
+.ap-progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(56, 189, 248, 0.1);
+    border-radius: 2px;
+    margin: 6px 0;
+    overflow: hidden;
+}
+
+.ap-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #38bdf8, #4ade80);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+/* Autopilot log */
+#autopilotLog {
+    max-height: 180px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    line-height: 1.5;
+    padding: 6px;
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 6px;
+    border: 1px solid rgba(56, 189, 248, 0.06);
+}
+
+#autopilotLog::-webkit-scrollbar {
+    width: 4px;
+}
+
+#autopilotLog::-webkit-scrollbar-thumb {
+    background: rgba(56, 189, 248, 0.2);
+    border-radius: 2px;
+}
+
+.ap-log-entry {
+    padding: 2px 0;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.04);
+}
+
+.ap-log-time {
+    color: var(--text-muted);
+    margin-right: 6px;
+}
+
+/* Info rows */
+.ap-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 12px;
+}
+
+.ap-info-label {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.ap-info-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.ap-direction-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    text-align: center;
+    padding: 6px;
+    color: #38bdf8;
+    letter-spacing: 1px;
+}
     </style>
 </head>
 <body>
@@ -486,7 +678,7 @@
                     </div>
                     <div>
                         <span class="conn-label" style="display:block; margin-bottom: 4px;">Rover ESP32 IP:</span>
-                        <input type="text" id="espIpInput" placeholder="192.168.x.x" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+                        <input type="text" id="espIpInput" value="192.168.137.37" placeholder="192.168.x.x" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
                     </div>
                 </div>
             </div>
@@ -501,6 +693,115 @@
                 </div>
                 <div class="log-container" id="logContainer"></div>
             </div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  MANUAL OVERRIDE PANEL                                    -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="sidebar-section card" style="padding: 12px; margin-bottom: 12px;">
+    <div class="card-header" style="margin: -12px -12px 12px -12px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;">
+        <div class="card-header-left">
+            <div class="card-icon controls" style="margin-right: 8px;">🎮</div>
+            <span class="card-title">Manual Override</span>
+        </div>
+    </div>
+    
+    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-align: center;">Direct ESP32 Control</div>
+    
+    <div class="ap-slider-row" style="margin-bottom: 12px;">
+        <label>Manual Speed</label>
+        <input type="range" id="manualSpeed" min="50" max="255" value="140" oninput="document.getElementById('valManualSpeed').textContent=this.value; sendManualCommand('speed?v=' + this.value);">
+        <span class="ap-slider-val" id="valManualSpeed">140</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-items: center; justify-items: center; margin-bottom: 8px;">
+        <div></div>
+        <button onmousedown="sendManualCommand('forward')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">↑</button>
+        <div></div>
+        
+        <button onmousedown="sendManualCommand('left')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">←</button>
+        <button onmousedown="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(248, 113, 113, 0.2); border: 1px solid var(--accent-red); color: var(--accent-red); border-radius: 8px; cursor: pointer;">■</button>
+        <button onmousedown="sendManualCommand('right')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">→</button>
+        
+        <div></div>
+        <button onmousedown="sendManualCommand('reverse')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">↓</button>
+        <div></div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  AUTOPILOT CONTROL PANEL                                  -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="sidebar-section card" style="padding: 12px;">
+    <div class="card-header" style="margin: -12px -12px 12px -12px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;">
+        <div class="card-header-left">
+            <div class="card-icon controls" style="margin-right: 8px;">🤖</div>
+            <span class="card-title">Autonomous Pilot</span>
+        </div>
+    </div>
+
+    <!-- Mission Controls -->
+    <div class="ap-controls">
+        <button class="ap-btn ap-btn-start" id="btnStartMission" onclick="startMission()">▶ START</button>
+        <button class="ap-btn ap-btn-pause" id="btnPauseMission" onclick="pauseMission()">⏸ PAUSE</button>
+        <button class="ap-btn ap-btn-stop" id="btnStopMission" onclick="stopMission()">■ STOP</button>
+    </div>
+
+    <!-- Status -->
+    <div class="ap-info-row">
+        <span class="ap-info-label">State</span>
+        <span class="ap-state-badge ap-state-idle" id="autopilotState">IDLE</span>
+    </div>
+    <div class="ap-info-row">
+        <span class="ap-info-label">Rover</span>
+        <span class="ap-info-value" id="roverDetectStatus" style="color: #fb923c;">SEARCHING...</span>
+    </div>
+    <div class="ap-info-row">
+        <span class="ap-info-label">Progress</span>
+        <span class="ap-info-value" id="autopilotProgress">WP 0 / 0 (0%)</span>
+    </div>
+    <div class="ap-info-row">
+        <span class="ap-info-label">Heading</span>
+        <span class="ap-info-value" id="autopilotHeading" style="color: var(--accent-teal);">---°</span>
+    </div>
+    <div class="ap-progress-track">
+        <div class="ap-progress-fill" id="missionProgressBar"></div>
+    </div>
+    <div class="ap-direction-display" id="autopilotDirection">■ STOP</div>
+    <div style="font-size: 11px; color: var(--text-secondary); text-align: center; min-height: 28px;" id="autopilotMessage">Waiting for mission start</div>
+
+    <!-- Minimap -->
+    <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">COVERAGE MAP</div>
+    <canvas id="minimapCanvas" width="200" height="180"></canvas>
+
+    <!-- ESP32 Status -->
+    <div class="ap-esp32-row">
+        <div class="ap-esp32-dot" id="esp32StatusDot"></div>
+        <span style="font-size: 11px; color: var(--text-secondary);">ESP32:</span>
+        <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace;" id="esp32StatusText">Disconnected</span>
+    </div>
+
+    <!-- Config Sliders -->
+    <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">PARAMETERS</div>
+    <div class="ap-slider-row">
+        <label>Speed</label>
+        <input type="range" id="sliderSpeed" min="50" max="255" value="140" oninput="document.getElementById('valSpeed').textContent=this.value; sendAutopilotConfig();">
+        <span class="ap-slider-val" id="valSpeed">140</span>
+    </div>
+    <div class="ap-slider-row">
+        <label>Arrival (px)</label>
+        <input type="range" id="sliderArrival" min="10" max="100" value="30" oninput="document.getElementById('valArrival').textContent=this.value; sendAutopilotConfig();">
+        <span class="ap-slider-val" id="valArrival">30</span>
+    </div>
+    <div class="ap-slider-row">
+        <label>Duration (ms)</label>
+        <input type="range" id="sliderDuration" min="100" max="2000" value="400" step="50" oninput="document.getElementById('valDuration').textContent=this.value; sendAutopilotConfig();">
+        <span class="ap-slider-val" id="valDuration">400</span>
+    </div>
+
+    <!-- Autopilot Log -->
+    <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">MISSION LOG</div>
+    <div id="autopilotLog"></div>
+</div>
 
         </aside>
     </main>
@@ -1428,6 +1729,341 @@
         setStatus('offline', 'STANDBY');
         connectWebSocket();
         requestAnimationFrame(renderLoop);
+
+// ══════════════════════════════════════════════════════════════
+//  AUTOPILOT WEBSOCKET
+// ══════════════════════════════════════════════════════════════
+
+let autopilotWs = null;
+let autopilotConnected = false;
+
+function connectAutopilotWS() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    autopilotWs = new WebSocket(`${protocol}//${window.location.host}/ws/autopilot`);
+
+    autopilotWs.onopen = () => {
+        autopilotConnected = true;
+        addLog('[AUTOPILOT] Connected to autopilot telemetry');
+    };
+
+    autopilotWs.onmessage = (e) => {
+        try {
+            const data = JSON.parse(e.data);
+            if (data.type === 'ack') {
+                addLog(`[ACK] ${data.msg}`);
+                return;
+            }
+            updateAutopilotUI(data);
+        } catch (err) {
+            console.error('Autopilot WS parse error:', err);
+        }
+    };
+
+    autopilotWs.onclose = () => {
+        autopilotConnected = false;
+        setTimeout(connectAutopilotWS, 3000);
+    };
+
+    autopilotWs.onerror = (e) => {
+        console.error('Autopilot WS error:', e);
+    };
+}
+
+// ── Mission Control Functions ──
+
+function startMission() {
+    const esp32Ip = document.getElementById('espIpInput')?.value || '';
+    if (!esp32Ip) {
+        addLog('[ERROR] Please enter ESP32 IP address first');
+        alert('Please enter the ESP32 IP address in the Terrain Grid section');
+        return;
+    }
+
+    if (!gridStart || !gridEnd) {
+        addLog('[ERROR] Please draw a grid boundary first');
+        alert('Please draw a grid boundary first using the Terrain Grid Generator');
+        return;
+    }
+
+    const gridConfig = {
+        x1: Math.round(gridStart.x),
+        y1: Math.round(gridStart.y),
+        x2: Math.round(gridEnd.x),
+        y2: Math.round(gridEnd.y),
+        rows: parseInt(document.getElementById('gridRowsInput')?.value || '5'),
+        cols: parseInt(document.getElementById('gridColsInput')?.value || '5'),
+    };
+
+    if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
+        autopilotWs.send(JSON.stringify({
+            type: 'start_mission',
+            grid_config: gridConfig,
+            esp32_ip: esp32Ip,
+            waypoints: terrainGridData ? terrainGridData.pathWaypoints : null
+        }));
+        addLog(`[MISSION] Starting mission: ${gridConfig.rows}x${gridConfig.cols} grid`);
+    }
+}
+
+function pauseMission() {
+    if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
+        autopilotWs.send(JSON.stringify({ type: 'pause_mission' }));
+    }
+}
+
+function stopMission() {
+    if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
+        autopilotWs.send(JSON.stringify({ type: 'stop_mission' }));
+    }
+}
+
+function sendAutopilotConfig() {
+    const config = {
+        speed: parseInt(document.getElementById('sliderSpeed')?.value || '140'),
+        arrival_threshold: parseInt(document.getElementById('sliderArrival')?.value || '30'),
+        command_duration_ms: parseInt(document.getElementById('sliderDuration')?.value || '400'),
+    };
+    if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
+        autopilotWs.send(JSON.stringify({ type: 'update_config', config }));
+    }
+}
+
+function sendManualCommand(cmd) {
+    const esp32Ip = document.getElementById('espIpInput')?.value || '';
+    if (!esp32Ip) {
+        console.warn("No ESP32 IP for manual command");
+        return;
+    }
+    fetch(`http://${esp32Ip}/${cmd}`, { mode: 'no-cors' }).catch(err => console.error("Manual cmd error:", err));
+}
+
+// ── Update UI from telemetry ──
+
+function updateAutopilotUI(data) {
+    // State badge
+    const stateEl = document.getElementById('autopilotState');
+    if (stateEl) {
+        stateEl.textContent = data.state || 'IDLE';
+        stateEl.className = 'ap-state-badge ap-state-' + (data.state || 'idle').toLowerCase();
+    }
+
+    // Waypoint progress
+    const progEl = document.getElementById('autopilotProgress');
+    if (progEl) {
+        progEl.textContent = `WP ${data.current_waypoint_index || 0} / ${data.total_waypoints || 0} (${data.progress_percent || 0}%)`;
+    }
+
+    // Direction
+    const dirEl = document.getElementById('autopilotDirection');
+    if (dirEl) {
+        const dir = (data.direction || 'stop').toUpperCase();
+        const arrows = { FORWARD: '↑', REVERSE: '↓', LEFT: '←', RIGHT: '→', STOP: '■' };
+        dirEl.textContent = `${arrows[dir] || '■'} ${dir}`;
+    }
+
+    // Heading
+    const headEl = document.getElementById('autopilotHeading');
+    if (headEl) {
+        if (data.heading !== undefined && data.heading !== null) {
+            headEl.textContent = `${Math.round(data.heading)}°`;
+        } else {
+            headEl.textContent = '---°';
+        }
+    }
+
+    // Message
+    const msgEl = document.getElementById('autopilotMessage');
+    if (msgEl) msgEl.textContent = data.message || '';
+
+    // ESP32 status
+    const dotEl = document.getElementById('esp32StatusDot');
+    const txtEl = document.getElementById('esp32StatusText');
+    if (dotEl) dotEl.style.background = data.esp32_connected ? '#4ade80' : '#f87171';
+    if (txtEl) txtEl.textContent = data.esp32_connected ? 'Connected' : 'Disconnected';
+
+    // Rover detection
+    const roverEl = document.getElementById('roverDetectStatus');
+    if (roverEl) {
+        roverEl.textContent = data.rover_detected ? 'LOCKED' : 'SEARCHING...';
+        roverEl.style.color = data.rover_detected ? '#4ade80' : '#fb923c';
+    }
+
+    // Progress bar
+    const barEl = document.getElementById('missionProgressBar');
+    if (barEl) barEl.style.width = `${data.progress_percent || 0}%`;
+
+    // Log entries
+    if (data.log && data.log.length > 0) {
+        const logEl = document.getElementById('autopilotLog');
+        if (logEl) {
+            logEl.innerHTML = data.log.map(entry =>
+                `<div class="ap-log-entry"><span class="ap-log-time">${entry.time}</span> ${entry.msg}</div>`
+            ).join('');
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+    }
+
+    // Minimap
+    drawMinimap(data);
+}
+
+// ── Minimap Drawing ──
+
+function drawMinimap(data) {
+    const canvas = document.getElementById('minimapCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // Clear
+    ctx.fillStyle = '#0f1729';
+    ctx.fillRect(0, 0, W, H);
+
+    const gridConfig = data.grid_config || {};
+    const rows = gridConfig.rows || 5;
+    const cols = gridConfig.cols || 5;
+    const cellW = W / cols;
+    const cellH = H / rows;
+
+    // Draw grid lines
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+    ctx.lineWidth = 0.5;
+    for (let r = 0; r <= rows; r++) {
+        ctx.beginPath();
+        ctx.moveTo(0, r * cellH);
+        ctx.lineTo(W, r * cellH);
+        ctx.stroke();
+    }
+    for (let c = 0; c <= cols; c++) {
+        ctx.beginPath();
+        ctx.moveTo(c * cellW, 0);
+        ctx.lineTo(c * cellW, H);
+        ctx.stroke();
+    }
+
+    // Draw visited cells (green)
+    if (data.visited_cells) {
+        ctx.fillStyle = 'rgba(74, 222, 128, 0.3)';
+        data.visited_cells.forEach(cell => {
+            ctx.fillRect(cell.col * cellW + 1, cell.row * cellH + 1, cellW - 2, cellH - 2);
+        });
+    }
+
+    // Draw target waypoint (yellow)
+    if (data.target_position && data.total_waypoints > 0) {
+        const wpIdx = data.current_waypoint_index || 0;
+        if (data.target_position) {
+            const totalWps = data.total_waypoints;
+            if (totalWps > 0 && wpIdx < totalWps) {
+                let row, col;
+                let idx = 0;
+                outer:
+                for (let r = 0; r < rows; r++) {
+                    const colRange = r % 2 === 0
+                        ? Array.from({length: cols}, (_, i) => i)
+                        : Array.from({length: cols}, (_, i) => cols - 1 - i);
+                    for (const c of colRange) {
+                        if (idx === wpIdx) {
+                            row = r;
+                            col = c;
+                            break outer;
+                        }
+                        idx++;
+                    }
+                }
+                if (row !== undefined && col !== undefined) {
+                    const tx = (col + 0.5) * cellW;
+                    const ty = (row + 0.5) * cellH;
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.beginPath();
+                    ctx.arc(tx, ty, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Pulsing ring
+                    ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
+                    ctx.lineWidth = 1.5;
+                    const pulse = 6 + 3 * Math.sin(Date.now() / 300);
+                    ctx.beginPath();
+                    ctx.arc(tx, ty, pulse, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+
+    // Draw rover position (cyan)
+    if (data.rover_position) {
+        ctx.fillStyle = '#38bdf8';
+        const wpIdx = data.current_waypoint_index || 0;
+        if (data.total_waypoints > 0 && wpIdx < data.total_waypoints) {
+            let row, col;
+            let idx = 0;
+            outer2:
+            for (let r = 0; r < rows; r++) {
+                const colRange = r % 2 === 0
+                    ? Array.from({length: cols}, (_, i) => i)
+                    : Array.from({length: cols}, (_, i) => cols - 1 - i);
+                for (const c of colRange) {
+                    if (idx === wpIdx) {
+                        row = r;
+                        col = c;
+                        break outer2;
+                    }
+                    idx++;
+                }
+            }
+            if (row !== undefined && col !== undefined) {
+                const rx = (col + 0.5) * cellW;
+                const ry = (row + 0.5) * cellH;
+                ctx.beginPath();
+                ctx.arc(rx, ry, 4, 0, Math.PI * 2);
+                ctx.fill();
+                // Direction arrow
+                const dir = data.direction || 'stop';
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(rx, ry);
+                const arrLen = 12;
+                let ax = rx, ay = ry;
+                if (dir === 'forward') ay -= arrLen;
+                else if (dir === 'reverse') ay += arrLen;
+                else if (dir === 'left') ax -= arrLen;
+                else if (dir === 'right') ax += arrLen;
+                ctx.lineTo(ax, ay);
+                ctx.stroke();
+            }
+        }
+    }
+}
+
+// ── System log helper ──
+function addLog(msg) {
+    const logEl = document.getElementById('logContainer') || document.getElementById('autopilotLog');
+    if (logEl) {
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `<span class="log-time">${time}</span><span class="log-msg info">${msg}</span>`;
+        logEl.appendChild(entry);
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+    console.log(msg);
+}
+
+// ── Initialize autopilot WS connection ──
+connectAutopilotWS();
+
+// ── Periodic minimap refresh (for animations) ──
+let lastTelemetry = null;
+const origUpdateAutopilotUI = updateAutopilotUI;
+updateAutopilotUI = function(data) {
+    lastTelemetry = data;
+    origUpdateAutopilotUI(data);
+};
+setInterval(() => {
+    if (lastTelemetry) drawMinimap(lastTelemetry);
+}, 100);
 
     </script>
 </body>
