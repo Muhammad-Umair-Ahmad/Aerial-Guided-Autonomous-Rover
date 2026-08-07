@@ -182,6 +182,23 @@ async def cv_endpoint(websocket: WebSocket):
                     if autopilot and results.get("detections"):
                         autopilot.feed_detection(results)
 
+                    # DATA LOGGING (Behavioral Cloning)
+                    if data_logger.is_recording and autopilot:
+                        command = autopilot.motor.last_command
+                        if data_logger.record_frame(image_b64, command):
+                            await websocket.send_json({
+                                "type": "recording_status",
+                                "frames_collected": data_logger.frames_collected
+                            })
+                            
+                    # AI INFERENCE
+                    if is_ai_mode_active and behavioral_pilot and autopilot:
+                        ai_cmd = behavioral_pilot.predict_command(image_b64)
+                        from autopilot import Direction
+                        if ai_cmd in [d.value for d in Direction]:
+                            import asyncio
+                            asyncio.create_task(autopilot.motor.send_command(Direction(ai_cmd), duration_ms=0))
+
                     # ── Add rover center coordinates for convenience ──
                     if results.get("detections") and len(results["detections"]) > 0:
                         box = results["detections"][0]["box"]
@@ -271,6 +288,50 @@ async def autopilot_telemetry(websocket: WebSocket):
                         asyncio.create_task(autopilot.motor.set_speed(config["speed"]))
                     await websocket.send_json({"type": "ack", "msg": "Config updated."})
 
+                elif msg_type == "update_ip" and autopilot:
+                    ip = data.get("ip", "")
+                    if ip:
+                        autopilot.motor.esp32_ip = ip
+                    await websocket.send_json({"type": "ack", "msg": "IP updated."})
+
+                elif msg_type == "manual_override" and autopilot:
+                    from autopilot import Direction
+                    cmd = data.get("command")
+                    if cmd in [d.value for d in Direction]:
+                        # Pause mission if it's running
+                        if autopilot.state.value not in ["idle", "paused", "complete", "error"]:
+                            asyncio.create_task(autopilot.pause_mission())
+                        asyncio.create_task(autopilot.motor.send_command(Direction(cmd), duration_ms=0))
+                    await websocket.send_json({"type": "ack", "msg": f"Manual cmd: {cmd}"})
+
+                elif msg_type == "set_ai_mode":
+                    enabled = data.get("enabled", False)
+                    global is_ai_mode_active, behavioral_pilot
+                    is_ai_mode_active = enabled
+                    
+                    if enabled:
+                        if behavioral_pilot is None:
+                            from behavioral_pilot import BehavioralPilot
+                            behavioral_pilot = BehavioralPilot()
+                            success = behavioral_pilot.load_model()
+                            if not success:
+                                is_ai_mode_active = False
+                                await websocket.send_json({"type": "ack", "msg": "Failed to load AI model"})
+                                continue
+                        
+                        # Stop standard autopilot if running
+                        if autopilot and autopilot.state.value not in ["idle", "paused", "complete", "error"]:
+                            asyncio.create_task(autopilot.pause_mission())
+                            
+                        await websocket.send_json({"type": "ack", "msg": "?? AI DRIVING ACTIVATED"})
+                    else:
+                        if autopilot:
+                            asyncio.create_task(autopilot.motor.stop())
+                        await websocket.send_json({"type": "ack", "msg": "AI Driving deactivated"})
+                elif msg_type == "set_recording":
+                    enabled = data.get("enabled", False)
+                    data_logger.set_recording(enabled)
+                    await websocket.send_json({"type": "ack", "msg": f"Recording {'started' if enabled else 'stopped'}"})
                 elif msg_type == "get_telemetry" and autopilot:
                     await websocket.send_json(autopilot.get_telemetry())
 
@@ -340,3 +401,5 @@ async def autopilot_status():
 async def shutdown_event():
     if autopilot:
         await autopilot.cleanup()
+
+

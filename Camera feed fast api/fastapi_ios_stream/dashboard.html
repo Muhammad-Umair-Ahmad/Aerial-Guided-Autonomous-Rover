@@ -116,7 +116,7 @@
         /* ── MAIN LAYOUT ── */
         .main-grid {
             position: relative; z-index: 1;
-            display: grid; grid-template-columns: 1fr 280px; gap: 10px;
+            display: grid; grid-template-columns: 1fr 340px; gap: 10px;
             padding: 10px 12px; margin: 0 auto;
             height: calc(100vh - 44px);
             overflow: hidden;
@@ -235,6 +235,57 @@
         .sidebar::-webkit-scrollbar-track { background: transparent; }
         .sidebar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
+        /* Tab bar at top of sidebar */
+        .sidebar-tabs {
+            display: flex;
+            background: rgba(10, 14, 23, 0.9);
+            border-bottom: 1px solid var(--glass-border);
+            border-radius: 12px 12px 0 0;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.3px;
+        }
+
+        .sidebar-tab:hover {
+            color: var(--text-secondary);
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .sidebar-tab.active {
+            color: var(--accent-cyan);
+            border-bottom-color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.08);
+        }
+
+        .tab-panel {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+            padding: 8px 0;
+        }
+
+        .tab-panel.active {
+            display: flex;
+        }
+
         /* ── TELEMETRY ── */
         .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--glass-border); }
 
@@ -305,6 +356,7 @@
             .feed-area { grid-column: 1; grid-row: 1; }
             .sidebar { grid-column: 1; grid-row: 2; }
             .video-container { min-height: 280px; }
+            .sidebar-tabs { flex-wrap: wrap; }
         }
 
 /* ══════════════════════════════════════════════════════════════
@@ -369,7 +421,7 @@
 /* Minimap */
 #minimapCanvas {
     width: 100%;
-    height: 180px;
+    height: 130px;
     border-radius: 8px;
     border: 1px solid rgba(56, 189, 248, 0.12);
     margin: 8px 0;
@@ -439,7 +491,7 @@
 
 /* Autopilot log */
 #autopilotLog {
-    max-height: 180px;
+    max-height: 120px;
     overflow-y: auto;
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
@@ -591,218 +643,256 @@
         </section>
 
         <!-- ── SIDEBAR ── -->
-        <aside class="sidebar">
-
-            <!-- ── TELEMETRY ── -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <div class="card-icon telemetry">&#x1F4CA;</div>
-                        <span class="card-title">Feed Telemetry</span>
-                    </div>
-                </div>
-                <div class="telemetry-grid">
-                    <div class="telemetry-cell">
-                        <span class="telemetry-label">FPS</span>
-                        <span class="telemetry-value cyan" id="telFps">--</span>
-                    </div>
-                    <div class="telemetry-cell">
-                        <span class="telemetry-label">Resolution</span>
-                        <span class="telemetry-value green" id="telRes">--</span>
-                    </div>
-                    <div class="telemetry-cell">
-                        <span class="telemetry-label">Uptime</span>
-                        <span class="telemetry-value orange" id="telUptime">00:00</span>
-                    </div>
-                    <div class="telemetry-cell">
-                        <span class="telemetry-label">Frames</span>
-                        <span class="telemetry-value teal" id="telFrames">0</span>
-                    </div>
-                </div>
+        <aside class="sidebar" style="display: flex; flex-direction: column; gap: 0; overflow: hidden;">
+            <!-- Tab Bar -->
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" data-tab="control">🎮 Control</button>
+                <button class="sidebar-tab" data-tab="status">📊 Status</button>
+                <button class="sidebar-tab" data-tab="config">⚙ Config</button>
             </div>
-
-            <!-- ── AI VISION ── -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <div class="card-icon system">&#x1F9E0;</div>
-                        <span class="card-title">AI Vision</span>
-                    </div>
-                </div>
-                <div class="conn-info" style="padding: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span class="conn-label">Rover Detection (YOLO)</span>
-                        <label class="switch">
-                            <input type="checkbox" id="aiToggle" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── TERRAIN GRID ── -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <div class="card-icon controls">&#x1F4D0;</div>
-                        <span class="card-title">Terrain Grid</span>
-                    </div>
-                </div>
-                <div class="conn-info" style="padding: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span class="conn-label">Draw Boundary (Red)</span>
-                        <label class="switch">
-                            <input type="checkbox" id="gridToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
-                        <span class="conn-label">Top-Left:</span>
-                        <span class="conn-value cyan" id="gridStartLabel">-- , --</span>
-                    </div>
-                    <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
-                        <span class="conn-label">Bottom-Right:</span>
-                        <span class="conn-value orange" id="gridEndLabel">-- , --</span>
-                    </div>
-                    <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                        <span class="conn-label">Grid Size:</span>
-                        <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="number" id="gridRowsInput" value="3" min="1" max="20" style="width:40px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:var(--text-primary); border-radius:4px; padding:2px; font-family:'JetBrains Mono',monospace; text-align:center;">
-                            <span style="color:var(--text-muted); font-size:10px;">x</span>
-                            <input type="number" id="gridColsInput" value="2" min="1" max="20" style="width:40px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:var(--text-primary); border-radius:4px; padding:2px; font-family:'JetBrains Mono',monospace; text-align:center;">
+            
+            <!-- Tab Panels -->
+            <div class="tab-panel active" id="tabControl">
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!--  MANUAL OVERRIDE PANEL                                    -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <div class="sidebar-section card" style="padding: 12px;">
+                    <div class="card-header" style="margin: -12px -12px 12px -12px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;">
+                        <div class="card-header-left">
+                            <div class="card-icon controls" style="margin-right: 8px;">🎮</div>
+                            <span class="card-title">Manual Override</span>
                         </div>
                     </div>
+                    
+                                        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-align: center;">Direct ESP32 Control</div>
+                    
+                    <div class="conn-info" style="padding: 12px; margin-bottom: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="conn-label" style="color: var(--accent-red);">?? Record Training Data</span>
+                            <label class="switch">
+                                <input type="checkbox" id="recordDataToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;" id="recordStatus">Dataset frames: 0</div>
+                    </div>
+                    
+                    <div class="ap-slider-row" style="margin-bottom: 12px;">
+                        <label>Manual Speed</label>
+                        <input type="range" id="manualSpeed" min="50" max="255" value="140" oninput="document.getElementById('valManualSpeed').textContent=this.value; sendManualCommand('speed?v=' + this.value);">
+                        <span class="ap-slider-val" id="valManualSpeed">140</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-items: center; justify-items: center; margin-bottom: 8px;">
+                        <div></div>
+                        <button onmousedown="sendManualCommand('forward')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">↑</button>
+                        <div></div>
+                        
+                        <button onmousedown="sendManualCommand('left')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">←</button>
+                        <button onmousedown="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(248, 113, 113, 0.2); border: 1px solid var(--accent-red); color: var(--accent-red); border-radius: 8px; cursor: pointer;">■</button>
+                        <button onmousedown="sendManualCommand('right')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">→</button>
+                        
+                        <div></div>
+                        <button onmousedown="sendManualCommand('reverse')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">↓</button>
+                        <div></div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!--  AUTOPILOT CONTROL PANEL                                  -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <div class="sidebar-section card" style="padding: 12px;">
+                    <div class="card-header" style="margin: -12px -12px 12px -12px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;">
+                        <div class="card-header-left">
+                            <div class="card-icon controls" style="margin-right: 8px;">🤖</div>
+                            <span class="card-title">Autonomous Pilot</span>
+                        </div>
+                    </div>
+
+                                        <!-- Mission Controls -->
                     <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                        <button id="btnGenerateGrid" style="flex:1; padding: 6px; background: var(--accent-cyan); color: #000; border: none; border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">Generate Grid</button>
-                        <button id="btnClearGrid" style="flex:1; padding: 6px; background: rgba(248, 113, 113, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">Clear Grid</button>
+                        <button id="btnAiModeToggle" onclick="toggleAiMode()" style="flex:1; padding: 6px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #a855f7; border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">?? AI DRIVING: OFF</button>
                     </div>
-                    <div>
-                        <span class="conn-label" style="display:block; margin-bottom: 4px;">Rover ESP32 IP:</span>
-                        <input type="text" id="espIpInput" value="192.168.137.37" placeholder="192.168.x.x" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+                    <div class="ap-controls">
+                        <button class="ap-btn ap-btn-start" id="btnStartMission" onclick="startMission()">▶ START</button>
+                        <button class="ap-btn ap-btn-pause" id="btnPauseMission" onclick="pauseMission()">⏸ PAUSE</button>
+                        <button class="ap-btn ap-btn-stop" id="btnStopMission" onclick="stopMission()">■ STOP</button>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="ap-info-row">
+                        <span class="ap-info-label">State</span>
+                        <span class="ap-state-badge ap-state-idle" id="autopilotState">IDLE</span>
+                    </div>
+                    <div class="ap-info-row">
+                        <span class="ap-info-label">Rover</span>
+                        <span class="ap-info-value" id="roverDetectStatus" style="color: #fb923c;">SEARCHING...</span>
+                    </div>
+                    <div class="ap-info-row">
+                        <span class="ap-info-label">Progress</span>
+                        <span class="ap-info-value" id="autopilotProgress">WP 0 / 0 (0%)</span>
+                    </div>
+                    <div class="ap-info-row">
+                        <span class="ap-info-label">Heading</span>
+                        <span class="ap-info-value" id="autopilotHeading" style="color: var(--accent-teal);">---°</span>
+                    </div>
+                    <div class="ap-progress-track">
+                        <div class="ap-progress-fill" id="missionProgressBar"></div>
+                    </div>
+                    <div class="ap-direction-display" id="autopilotDirection">■ STOP</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); text-align: center; min-height: 28px;" id="autopilotMessage">Waiting for mission start</div>
+                    
+                    <!-- ESP32 Status -->
+                    <div class="ap-esp32-row">
+                        <div class="ap-esp32-dot" id="esp32StatusDot"></div>
+                        <span style="font-size: 11px; color: var(--text-secondary);">ESP32:</span>
+                        <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace;" id="esp32StatusText">Disconnected</span>
                     </div>
                 </div>
             </div>
-
-            <!-- ── LOG ── -->
-            <div class="card" style="flex:1; display:flex; flex-direction:column;">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <div class="card-icon feed">&#x1F4CB;</div>
-                        <span class="card-title">System Log</span>
+            
+            <div class="tab-panel" id="tabStatus">
+                <!-- ── TELEMETRY ── -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon telemetry">&#x1F4CA;</div>
+                            <span class="card-title">Feed Telemetry</span>
+                        </div>
+                    </div>
+                    <div class="telemetry-grid">
+                        <div class="telemetry-cell">
+                            <span class="telemetry-label">FPS</span>
+                            <span class="telemetry-value cyan" id="telFps">--</span>
+                        </div>
+                        <div class="telemetry-cell">
+                            <span class="telemetry-label">Resolution</span>
+                            <span class="telemetry-value green" id="telRes">--</span>
+                        </div>
+                        <div class="telemetry-cell">
+                            <span class="telemetry-label">Uptime</span>
+                            <span class="telemetry-value orange" id="telUptime">00:00</span>
+                        </div>
+                        <div class="telemetry-cell">
+                            <span class="telemetry-label">Frames</span>
+                            <span class="telemetry-value teal" id="telFrames">0</span>
+                        </div>
                     </div>
                 </div>
-                <div class="log-container" id="logContainer"></div>
+
+                <!-- ── COVERAGE MAP & MISSION LOG ── -->
+                <div class="sidebar-section card" style="padding: 12px;">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 0;">COVERAGE MAP</div>
+                    <canvas id="minimapCanvas" width="200" height="130"></canvas>
+                    
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">MISSION LOG</div>
+                    <div id="autopilotLog"></div>
+                </div>
+
+                <!-- ── LOG ── -->
+                <div class="card" style="display:flex; flex-direction:column; max-height: 200px; overflow-y: auto;">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon feed">&#x1F4CB;</div>
+                            <span class="card-title">System Log</span>
+                        </div>
+                    </div>
+                    <div class="log-container" id="logContainer"></div>
+                </div>
             </div>
+            
+            <div class="tab-panel" id="tabConfig">
+                <!-- ── AI VISION ── -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon system">&#x1F9E0;</div>
+                            <span class="card-title">AI Vision</span>
+                        </div>
+                    </div>
+                    <div class="conn-info" style="padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <span class="conn-label">Rover Detection (YOLO)</span>
+                            <label class="switch">
+                                <input type="checkbox" id="aiToggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
-<!-- ══════════════════════════════════════════════════════════ -->
-<!--  MANUAL OVERRIDE PANEL                                    -->
-<!-- ══════════════════════════════════════════════════════════ -->
-<div class="sidebar-section card" style="padding: 12px; margin-bottom: 12px;">
-    <div class="card-header" style="margin: -12px -12px 12px -12px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;">
-        <div class="card-header-left">
-            <div class="card-icon controls" style="margin-right: 8px;">🎮</div>
-            <span class="card-title">Manual Override</span>
-        </div>
-    </div>
-    
-    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-align: center;">Direct ESP32 Control</div>
-    
-    <div class="ap-slider-row" style="margin-bottom: 12px;">
-        <label>Manual Speed</label>
-        <input type="range" id="manualSpeed" min="50" max="255" value="140" oninput="document.getElementById('valManualSpeed').textContent=this.value; sendManualCommand('speed?v=' + this.value);">
-        <span class="ap-slider-val" id="valManualSpeed">140</span>
-    </div>
+                <!-- ── TERRAIN GRID ── -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon controls">&#x1F4D0;</div>
+                            <span class="card-title">Terrain Grid</span>
+                        </div>
+                    </div>
+                    <div class="conn-info" style="padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <span class="conn-label">Draw Boundary (Red)</span>
+                            <label class="switch">
+                                <input type="checkbox" id="gridToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
+                            <span class="conn-label">Top-Left:</span>
+                            <span class="conn-value cyan" id="gridStartLabel">-- , --</span>
+                        </div>
+                        <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+                            <span class="conn-label">Bottom-Right:</span>
+                            <span class="conn-value orange" id="gridEndLabel">-- , --</span>
+                        </div>
+                        <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <span class="conn-label">Grid Size:</span>
+                            <div style="display: flex; gap: 4px; align-items: center;">
+                                <input type="number" id="gridRowsInput" value="3" min="1" max="20" style="width:40px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:var(--text-primary); border-radius:4px; padding:2px; font-family:'JetBrains Mono',monospace; text-align:center;">
+                                <span style="color:var(--text-muted); font-size:10px;">x</span>
+                                <input type="number" id="gridColsInput" value="2" min="1" max="20" style="width:40px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:var(--text-primary); border-radius:4px; padding:2px; font-family:'JetBrains Mono',monospace; text-align:center;">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                            <button id="btnGenerateGrid" style="flex:1; padding: 6px; background: var(--accent-cyan); color: #000; border: none; border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">Generate Grid</button>
+                            <button id="btnClearGrid" style="flex:1; padding: 6px; background: rgba(248, 113, 113, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">Clear Grid</button>
+                        </div>
+                        <div>
+                            <span class="conn-label" style="display:block; margin-bottom: 4px;">Rover ESP32 IP:</span>
+                            <div style="display: flex; gap: 4px; align-items: center;">
+                                <input type="text" id="espIpInput" value="192.168.137.249" placeholder="192.168.x.x" style="flex:1; padding: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+                                <button id="btnSaveIp" title="Save IP" style="padding: 6px 10px; background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.3); color: var(--accent-green); border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: 600; font-family: 'Inter', sans-serif; white-space: nowrap;">💾 Save</button>
+                            </div>
+                            <span id="ipSaveStatus" style="font-size: 10px; color: var(--accent-green); display: none; margin-top: 2px;">✓ IP saved</span>
+                        </div>
+                    </div>
+                </div>
 
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-items: center; justify-items: center; margin-bottom: 8px;">
-        <div></div>
-        <button onmousedown="sendManualCommand('forward')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">↑</button>
-        <div></div>
-        
-        <button onmousedown="sendManualCommand('left')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">←</button>
-        <button onmousedown="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(248, 113, 113, 0.2); border: 1px solid var(--accent-red); color: var(--accent-red); border-radius: 8px; cursor: pointer;">■</button>
-        <button onmousedown="sendManualCommand('right')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">→</button>
-        
-        <div></div>
-        <button onmousedown="sendManualCommand('reverse')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">↓</button>
-        <div></div>
-    </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════════════ -->
-<!--  AUTOPILOT CONTROL PANEL                                  -->
-<!-- ══════════════════════════════════════════════════════════ -->
-<div class="sidebar-section card" style="padding: 12px;">
-    <div class="card-header" style="margin: -12px -12px 12px -12px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;">
-        <div class="card-header-left">
-            <div class="card-icon controls" style="margin-right: 8px;">🤖</div>
-            <span class="card-title">Autonomous Pilot</span>
-        </div>
-    </div>
-
-    <!-- Mission Controls -->
-    <div class="ap-controls">
-        <button class="ap-btn ap-btn-start" id="btnStartMission" onclick="startMission()">▶ START</button>
-        <button class="ap-btn ap-btn-pause" id="btnPauseMission" onclick="pauseMission()">⏸ PAUSE</button>
-        <button class="ap-btn ap-btn-stop" id="btnStopMission" onclick="stopMission()">■ STOP</button>
-    </div>
-
-    <!-- Status -->
-    <div class="ap-info-row">
-        <span class="ap-info-label">State</span>
-        <span class="ap-state-badge ap-state-idle" id="autopilotState">IDLE</span>
-    </div>
-    <div class="ap-info-row">
-        <span class="ap-info-label">Rover</span>
-        <span class="ap-info-value" id="roverDetectStatus" style="color: #fb923c;">SEARCHING...</span>
-    </div>
-    <div class="ap-info-row">
-        <span class="ap-info-label">Progress</span>
-        <span class="ap-info-value" id="autopilotProgress">WP 0 / 0 (0%)</span>
-    </div>
-    <div class="ap-info-row">
-        <span class="ap-info-label">Heading</span>
-        <span class="ap-info-value" id="autopilotHeading" style="color: var(--accent-teal);">---°</span>
-    </div>
-    <div class="ap-progress-track">
-        <div class="ap-progress-fill" id="missionProgressBar"></div>
-    </div>
-    <div class="ap-direction-display" id="autopilotDirection">■ STOP</div>
-    <div style="font-size: 11px; color: var(--text-secondary); text-align: center; min-height: 28px;" id="autopilotMessage">Waiting for mission start</div>
-
-    <!-- Minimap -->
-    <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">COVERAGE MAP</div>
-    <canvas id="minimapCanvas" width="200" height="180"></canvas>
-
-    <!-- ESP32 Status -->
-    <div class="ap-esp32-row">
-        <div class="ap-esp32-dot" id="esp32StatusDot"></div>
-        <span style="font-size: 11px; color: var(--text-secondary);">ESP32:</span>
-        <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace;" id="esp32StatusText">Disconnected</span>
-    </div>
-
-    <!-- Config Sliders -->
-    <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">PARAMETERS</div>
-    <div class="ap-slider-row">
-        <label>Speed</label>
-        <input type="range" id="sliderSpeed" min="50" max="255" value="140" oninput="document.getElementById('valSpeed').textContent=this.value; sendAutopilotConfig();">
-        <span class="ap-slider-val" id="valSpeed">140</span>
-    </div>
-    <div class="ap-slider-row">
-        <label>Arrival (px)</label>
-        <input type="range" id="sliderArrival" min="10" max="100" value="30" oninput="document.getElementById('valArrival').textContent=this.value; sendAutopilotConfig();">
-        <span class="ap-slider-val" id="valArrival">30</span>
-    </div>
-    <div class="ap-slider-row">
-        <label>Duration (ms)</label>
-        <input type="range" id="sliderDuration" min="100" max="2000" value="400" step="50" oninput="document.getElementById('valDuration').textContent=this.value; sendAutopilotConfig();">
-        <span class="ap-slider-val" id="valDuration">400</span>
-    </div>
-
-    <!-- Autopilot Log -->
-    <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">MISSION LOG</div>
-    <div id="autopilotLog"></div>
-</div>
-
+                <!-- ── AUTOPILOT PARAMETERS ── -->
+                <div class="sidebar-section card" style="padding: 12px;">
+                    <div class="card-header" style="margin: -12px -12px 12px -12px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;">
+                        <div class="card-header-left">
+                            <div class="card-icon controls" style="margin-right: 8px;">⚙</div>
+                            <span class="card-title">Autopilot Parameters</span>
+                        </div>
+                    </div>
+                    <div class="ap-slider-row">
+                        <label>Speed</label>
+                        <input type="range" id="sliderSpeed" min="50" max="255" value="140" oninput="document.getElementById('valSpeed').textContent=this.value; sendAutopilotConfig();">
+                        <span class="ap-slider-val" id="valSpeed">140</span>
+                    </div>
+                    <div class="ap-slider-row">
+                        <label>Arrival (px)</label>
+                        <input type="range" id="sliderArrival" min="10" max="100" value="30" oninput="document.getElementById('valArrival').textContent=this.value; sendAutopilotConfig();">
+                        <span class="ap-slider-val" id="valArrival">30</span>
+                    </div>
+                    <div class="ap-slider-row">
+                        <label>Duration (ms)</label>
+                        <input type="range" id="sliderDuration" min="100" max="2000" value="400" step="50" oninput="document.getElementById('valDuration').textContent=this.value; sendAutopilotConfig();">
+                        <span class="ap-slider-val" id="valDuration">400</span>
+                    </div>
+                </div>
+            </div>
         </aside>
     </main>
 
@@ -852,6 +942,55 @@
         const btnGenerateGrid = document.getElementById('btnGenerateGrid');
         const btnClearGrid = document.getElementById('btnClearGrid');
         const espIpInput = document.getElementById('espIpInput');
+
+        // Tab switching
+        document.querySelectorAll('.sidebar-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Deactivate all tabs and panels
+                document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                // Activate clicked tab and its panel
+                tab.classList.add('active');
+                const panelId = 'tab' + tab.dataset.tab.charAt(0).toUpperCase() + tab.dataset.tab.slice(1);
+                document.getElementById(panelId).classList.add('active');
+            });
+        });
+
+        // ── Load saved ESP32 IP from localStorage ──
+        const savedEspIp = localStorage.getItem('agra_esp32_ip');
+        if (savedEspIp) {
+            espIpInput.value = savedEspIp;
+        }
+
+        // ── Save IP on button click ──
+        document.getElementById('btnSaveIp').addEventListener('click', () => {
+            const ip = espIpInput.value.trim();
+            if (ip) {
+                localStorage.setItem('agra_esp32_ip', ip);
+                if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
+                    autopilotWs.send(JSON.stringify({ type: 'update_ip', ip: ip }));
+                }
+                const status = document.getElementById('ipSaveStatus');
+                if(status) {
+                    status.style.display = 'block';
+                    status.textContent = `✓ IP saved: ${ip}`;
+                    setTimeout(() => { status.style.display = 'none'; }, 3000);
+                }
+                log(`ESP32 IP saved: ${ip}`, 'success');
+            }
+        });
+
+        // ── Also auto-save when IP input loses focus ──
+        espIpInput.addEventListener('change', () => {
+            const ip = espIpInput.value.trim();
+            if (ip) {
+                localStorage.setItem('agra_esp32_ip', ip);
+                if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
+                    autopilotWs.send(JSON.stringify({ type: 'update_ip', ip: ip }));
+                }
+                log(`ESP32 IP updated: ${ip}`, 'info');
+            }
+        });
 
         let cvWs = null;
         let aiEnabled = true;
@@ -1756,9 +1895,16 @@ function connectAutopilotWS() {
             updateAutopilotUI(data);
         } catch (err) {
             console.error('Autopilot WS parse error:', err);
+        }        // -- Data Recording --
+        const recordToggle = document.getElementById('recordDataToggle');
+        if(recordToggle) {
+            recordToggle.addEventListener('change', (e) => {
+                if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
+                    autopilotWs.send(JSON.stringify({ type: 'set_recording', enabled: e.target.checked }));
+                }
+            });
         }
     };
-
     autopilotWs.onclose = () => {
         autopilotConnected = false;
         setTimeout(connectAutopilotWS, 3000);
@@ -1771,6 +1917,25 @@ function connectAutopilotWS() {
 
 // ── Mission Control Functions ──
 
+// -- AI Inference Mode --
+let aiModeActive = false;
+function toggleAiMode() {
+    aiModeActive = !aiModeActive;
+    const btn = document.getElementById('btnAiModeToggle');
+    if (aiModeActive) {
+        btn.textContent = "?? AI DRIVING: ON";
+        btn.style.background = "var(--accent-purple)";
+        btn.style.color = "#000";
+    } else {
+        btn.textContent = "?? AI DRIVING: OFF";
+        btn.style.background = "rgba(168, 85, 247, 0.15)";
+        btn.style.color = "#a855f7";
+    }
+    
+    if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
+        autopilotWs.send(JSON.stringify({ type: 'set_ai_mode', enabled: aiModeActive }));
+    }
+}
 function startMission() {
     const esp32Ip = document.getElementById('espIpInput')?.value || '';
     if (!esp32Ip) {
@@ -1829,12 +1994,11 @@ function sendAutopilotConfig() {
 }
 
 function sendManualCommand(cmd) {
-    const esp32Ip = document.getElementById('espIpInput')?.value || '';
-    if (!esp32Ip) {
-        console.warn("No ESP32 IP for manual command");
-        return;
+    if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
+        autopilotWs.send(JSON.stringify({ type: 'manual_override', command: cmd }));
+    } else {
+        console.warn("WebSocket not connected. Cannot send manual command.");
     }
-    fetch(`http://${esp32Ip}/${cmd}`, { mode: 'no-cors' }).catch(err => console.error("Manual cmd error:", err));
 }
 
 // ── Update UI from telemetry ──
@@ -2065,6 +2229,43 @@ setInterval(() => {
     if (lastTelemetry) drawMinimap(lastTelemetry);
 }, 100);
 
-    </script>
+    
+// -- KEYBOARD MANUAL CONTROLS --
+let activeKey = null;
+
+document.addEventListener('keydown', (e) => {
+    // Ignore if typing in an input field
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    
+    const key = e.key.toLowerCase();
+    if (activeKey === key) return; // Prevent key repeat spam
+
+    if (['w', 'a', 's', 'd'].includes(key)) {
+        activeKey = key;
+        if (key === 'w') sendManualCommand('forward');
+        if (key === 'a') sendManualCommand('left');
+        if (key === 's') sendManualCommand('reverse');
+        if (key === 'd') sendManualCommand('right');
+    } else if (key === ' ') {
+        activeKey = key;
+        sendManualCommand('stop');
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    
+    const key = e.key.toLowerCase();
+    if (['w', 'a', 's', 'd'].includes(key) && activeKey === key) {
+        activeKey = null;
+        sendManualCommand('stop');
+    } else if (key === ' ' && activeKey === key) {
+        activeKey = null;
+    }
+});
+</script>
 </body>
 </html>
+
+
+

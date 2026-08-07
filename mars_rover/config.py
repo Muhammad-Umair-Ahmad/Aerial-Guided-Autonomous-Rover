@@ -1,0 +1,8 @@
+import os
+
+class Config:
+    ESP32_IP = os.getenv("ESP32_IP", "192.168.137.249")
+    DEFAULT_SPEED = 140
+    HEADING_TOLERANCE = 30.0
+    STUCK_THRESHOLD = 8.0
+    ARRIVAL_THRESHOLD = 30.0
