@@ -1,10 +1,14 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import asyncio
 import json
 import base64
+import cv2
+import numpy as np
+from terrain_analyzer import UnsupervisedTerrainAnalyzer
 
 try:
     from cv_pipeline import ObjectDetector
@@ -23,6 +27,11 @@ except ImportError as e:
 
 app = FastAPI(title="AGRA Mission Control")
 
+@app.on_event("startup")
+async def startup_event():
+    if autopilot:
+        autopilot.start()
+
 # ── CORS (allow dashboard to talk to ESP32 through proxy if needed) ──
 app.add_middleware(
     CORSMiddleware,
@@ -31,14 +40,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Mount static files ──
+os.makedirs("static/heatmaps", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # Track all connected WebSocket clients
 connections: list[WebSocket] = []
 
 # Store the latest camera frame (base64) for snapshot endpoint
 latest_frame_b64: str = ""
+latest_image_b64: str = None
 
 # Track autopilot telemetry WebSocket clients
 autopilot_ws_clients: list[WebSocket] = []
+
+# Initialize terrain analyzer
+terrain_analyzer = UnsupervisedTerrainAnalyzer(patch_size=32, field_width_m=10.0, field_height_m=8.0)
 
 # ── Routes ──
 
@@ -121,7 +138,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 if conn in connections:
                     connections.remove(conn)
 
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, ConnectionResetError):
         if websocket in connections:
             connections.remove(websocket)
         print(f"[WS] Client disconnected. Total: {len(connections)}")
@@ -172,8 +189,9 @@ async def cv_endpoint(websocket: WebSocket):
 
                 # Store latest frame globally for snapshot endpoint
                 if image_b64:
-                    global latest_frame_b64
+                    global latest_frame_b64, latest_image_b64
                     latest_frame_b64 = image_b64
+                    latest_image_b64 = image_b64
                 
                 if ai_detector and image_b64:
                     results = ai_detector.detect_objects(image_b64, confidence_threshold=threshold)
@@ -181,23 +199,6 @@ async def cv_endpoint(websocket: WebSocket):
                     # ── Feed detection to autopilot tracker ──
                     if autopilot and results.get("detections"):
                         autopilot.feed_detection(results)
-
-                    # DATA LOGGING (Behavioral Cloning)
-                    if data_logger.is_recording and autopilot:
-                        command = autopilot.motor.last_command
-                        if data_logger.record_frame(image_b64, command):
-                            await websocket.send_json({
-                                "type": "recording_status",
-                                "frames_collected": data_logger.frames_collected
-                            })
-                            
-                    # AI INFERENCE
-                    if is_ai_mode_active and behavioral_pilot and autopilot:
-                        ai_cmd = behavioral_pilot.predict_command(image_b64)
-                        from autopilot import Direction
-                        if ai_cmd in [d.value for d in Direction]:
-                            import asyncio
-                            asyncio.create_task(autopilot.motor.send_command(Direction(ai_cmd), duration_ms=0))
 
                     # ── Add rover center coordinates for convenience ──
                     if results.get("detections") and len(results["detections"]) > 0:
@@ -218,7 +219,7 @@ async def cv_endpoint(websocket: WebSocket):
 
                     # ── Include autopilot state in CV response ──
                     if autopilot:
-                        results["autopilot_state"] = autopilot.state.value
+                        results["autopilot_state"] = autopilot.state_value
 
                     await websocket.send_json(results)
                 else:
@@ -227,7 +228,7 @@ async def cv_endpoint(websocket: WebSocket):
             except json.JSONDecodeError:
                 await websocket.send_json({"error": "Invalid JSON", "detections": []})
                 
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, ConnectionResetError):
         print("[CV] Dashboard disconnected from AI vision pipeline.")
     except Exception as e:
         print(f"[CV] Error in CV pipeline: {e}")
@@ -264,6 +265,11 @@ async def autopilot_telemetry(websocket: WebSocket):
             try:
                 data = json.loads(message)
                 msg_type = data.get("type", "")
+                
+                # Update global latest image for analysis
+                if data.get("image"):
+                    global latest_image_b64
+                    latest_image_b64 = data.get("image")
 
                 if msg_type == "start_mission" and autopilot:
                     grid_config = data.get("grid_config", {})
@@ -280,65 +286,112 @@ async def autopilot_telemetry(websocket: WebSocket):
                     asyncio.create_task(autopilot.pause_mission())
                     await websocket.send_json({"type": "ack", "msg": "Pause toggled."})
 
+                elif msg_type == "upload_sequence" and autopilot:
+                    sequence = data.get("sequence", [])
+                    version = data.get("version", 0)
+                    result = await autopilot.upload_sequence(sequence, version)
+                    await websocket.send_json({"type": "upload_result", **result})
+
+                elif msg_type == "run_analysis":
+                    if not latest_image_b64:
+                        await websocket.send_json({"type": "analysis_error", "msg": "No camera feed available."})
+                        continue
+                    
+                    try:
+                        # Decode base64 to numpy array
+                        img_data = base64.b64decode(latest_image_b64.split(",")[1] if "," in latest_image_b64 else latest_image_b64)
+                        nparr = np.frombuffer(img_data, np.uint8)
+                        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                        
+                        if frame is None or frame.size == 0:
+                            await websocket.send_json({"type": "analysis_error", "msg": "Failed to decode camera frame."})
+                            continue
+                            
+                        # Crop to boundary if provided
+                        boundary = data.get("boundary")
+                        if boundary:
+                            x1 = min(boundary.get("x1", 0), boundary.get("x2", frame.shape[1]))
+                            x2 = max(boundary.get("x1", 0), boundary.get("x2", frame.shape[1]))
+                            y1 = min(boundary.get("y1", 0), boundary.get("y2", frame.shape[0]))
+                            y2 = max(boundary.get("y1", 0), boundary.get("y2", frame.shape[0]))
+                            
+                            x1 = max(0, x1); y1 = max(0, y1)
+                            x2 = min(frame.shape[1], x2); y2 = min(frame.shape[0], y2)
+                            
+                            if x2 > x1 and y2 > y1:
+                                frame = frame[y1:y2, x1:x2].copy()
+                                
+                        # Run the analysis (synchronously, but it's fast enough or we could use run_in_executor)
+                        enhance = data.get("enhance", True)
+                        scan, images = terrain_analyzer.analyze(frame, enhance_input=enhance)
+                        
+                        # Save the images
+                        urls = {}
+                        for key, img in images.items():
+                            filename = f"heatmaps/{key}.jpg"
+                            cv2.imwrite(f"static/{filename}", img)
+                            urls[key] = f"/static/{filename}"
+                        
+                        # Count anomaly patches
+                        anomaly_count = sum(1 for p in scan.patches if p.anomaly_score > 0.5)
+                            
+                        await websocket.send_json({
+                            "type": "analysis_complete",
+                            "heatmaps": urls,
+                            "stats": {
+                                "life_percent": scan.field_life_percent,
+                                "liquid_percent": scan.field_liquid_percent,
+                                "processing_time": scan.processing_time_s,
+                                "grid_shape": list(scan.grid_shape),
+                                "patch_size": scan.patch_size,
+                                "anomaly_count": anomaly_count,
+                                "total_patches": len(scan.patches),
+                                "surface_classes": scan.surface_class_names
+                            }
+                        })
+                    except Exception as e:
+                        print(f"Analysis error: {e}")
+                        await websocket.send_json({"type": "analysis_error", "msg": str(e)})
+
                 elif msg_type == "update_config" and autopilot:
                     config = data.get("config", {})
                     autopilot.set_config(config)
-                    # If speed changed, also send to ESP32
-                    if "speed" in config:
-                        asyncio.create_task(autopilot.motor.set_speed(config["speed"]))
                     await websocket.send_json({"type": "ack", "msg": "Config updated."})
 
                 elif msg_type == "update_ip" and autopilot:
                     ip = data.get("ip", "")
                     if ip:
-                        autopilot.motor.esp32_ip = ip
+                        autopilot.esp32_ip = ip
                     await websocket.send_json({"type": "ack", "msg": "IP updated."})
 
-                elif msg_type == "manual_override" and autopilot:
-                    from autopilot import Direction
-                    cmd = data.get("command")
-                    if cmd in [d.value for d in Direction]:
-                        # Pause mission if it's running
-                        if autopilot.state.value not in ["idle", "paused", "complete", "error"]:
-                            asyncio.create_task(autopilot.pause_mission())
-                        asyncio.create_task(autopilot.motor.send_command(Direction(cmd), duration_ms=0))
-                    await websocket.send_json({"type": "ack", "msg": f"Manual cmd: {cmd}"})
+                elif msg_type == "resume_mission" and autopilot:
+                    asyncio.create_task(autopilot.resume_mission())
+                    await websocket.send_json({"type": "ack", "msg": "Mission resumed."})
 
-                elif msg_type == "set_ai_mode":
-                    enabled = data.get("enabled", False)
-                    global is_ai_mode_active, behavioral_pilot
-                    is_ai_mode_active = enabled
-                    
-                    if enabled:
-                        if behavioral_pilot is None:
-                            from behavioral_pilot import BehavioralPilot
-                            behavioral_pilot = BehavioralPilot()
-                            success = behavioral_pilot.load_model()
-                            if not success:
-                                is_ai_mode_active = False
-                                await websocket.send_json({"type": "ack", "msg": "Failed to load AI model"})
-                                continue
-                        
-                        # Stop standard autopilot if running
-                        if autopilot and autopilot.state.value not in ["idle", "paused", "complete", "error"]:
-                            asyncio.create_task(autopilot.pause_mission())
-                            
-                        await websocket.send_json({"type": "ack", "msg": "?? AI DRIVING ACTIVATED"})
+                elif msg_type == "get_sequence_status" and autopilot:
+                    status = await autopilot.query_esp32_status()
+                    await websocket.send_json({"type": "sequence_status", **status})
+
+                elif msg_type == "save_sequence" and autopilot:
+                    sequence = data.get("sequence", [])
+                    version = data.get("version", 0)
+                    autopilot._current_sequence = sequence
+                    if version > 0:
+                        autopilot._sequence_version = version
                     else:
-                        if autopilot:
-                            asyncio.create_task(autopilot.motor.stop())
-                        await websocket.send_json({"type": "ack", "msg": "AI Driving deactivated"})
+                        autopilot._sequence_version += 1
+                    autopilot._save_sequence_to_file()
+                    await websocket.send_json({"type": "ack", "msg": f"Sequence saved (v{autopilot._sequence_version})"})
+
                 elif msg_type == "set_recording":
                     enabled = data.get("enabled", False)
                     data_logger.set_recording(enabled)
                     await websocket.send_json({"type": "ack", "msg": f"Recording {'started' if enabled else 'stopped'}"})
-                elif msg_type == "get_telemetry" and autopilot:
-                    await websocket.send_json(autopilot.get_telemetry())
 
             except json.JSONDecodeError:
                 await websocket.send_json({"error": "Invalid JSON"})
 
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, ConnectionResetError):
         if autopilot:
             # Remove callback (find by reference won't work here, but cleanup)
             pass
@@ -362,8 +415,8 @@ async def start_autopilot(data: dict):
     grid_config = data.get("grid_config", {})
     esp32_ip = data.get("esp32_ip", "")
     
-    if not grid_config or not esp32_ip:
-        return JSONResponse({"error": "Missing grid_config or esp32_ip"}, status_code=400)
+    if not esp32_ip:
+        return JSONResponse({"error": "Missing esp32_ip"}, status_code=400)
     
     asyncio.create_task(autopilot.start_mission(grid_config, esp32_ip))
     return {"status": "starting", "message": "Mission starting..."}
@@ -393,6 +446,22 @@ async def autopilot_status():
     if not autopilot:
         return JSONResponse({"error": "Autopilot not available"}, status_code=503)
     return autopilot.get_telemetry()
+
+
+@app.get("/sequence")
+async def get_sequence():
+    """Get the currently saved sequence."""
+    if not autopilot:
+        return JSONResponse({"error": "Autopilot not available"}, status_code=503)
+    return autopilot.get_sequence_status()
+
+
+@app.get("/sequence/status")
+async def sequence_status():
+    """Get sequence sync status (local vs ESP32)."""
+    if not autopilot:
+        return JSONResponse({"error": "Autopilot not available"}, status_code=503)
+    return await autopilot.query_esp32_status()
 
 
 # ── Cleanup on shutdown ──

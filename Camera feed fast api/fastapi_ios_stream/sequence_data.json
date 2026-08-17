@@ -1,0 +1,31 @@
+{
+  "sequence": [
+    {
+      "pwm": 130,
+      "direction": "FORWARD",
+      "duration": 6000
+    },
+    {
+      "pwm": 190,
+      "direction": "LEFT",
+      "duration": 620
+    },
+    {
+      "pwm": 150,
+      "direction": "FORWARD",
+      "duration": 1500
+    },
+    {
+      "pwm": 210,
+      "direction": "LEFT",
+      "duration": 480
+    },
+    {
+      "pwm": 130,
+      "direction": "FORWARD",
+      "duration": 6000
+    }
+  ],
+  "version": 234,
+  "last_saved": "2026-08-13T12:22:29"
+}

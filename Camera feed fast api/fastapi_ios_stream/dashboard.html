@@ -550,6 +550,274 @@
     color: #38bdf8;
     letter-spacing: 1px;
 }
+
+/* ── HEATMAP DASHBOARD ── */
+.heatmap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.heatmap-panel {
+    background: #0d1117;
+    border: 1px solid rgba(56, 189, 248, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.heatmap-panel:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
+    transform: scale(1.01);
+}
+
+.heatmap-panel-header {
+    padding: 6px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    background: rgba(56, 189, 248, 0.06);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.heatmap-panel img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    background: #080c14;
+}
+
+.heatmap-panel .zoom-hint {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.4);
+    background: rgba(0,0,0,0.5);
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.heatmap-panel:hover .zoom-hint {
+    opacity: 1;
+}
+
+.heatmap-stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 8px;
+}
+
+.heatmap-stat {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(56, 189, 248, 0.08);
+    border-radius: 6px;
+    padding: 8px 6px;
+    text-align: center;
+}
+
+.heatmap-stat-label {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+}
+
+.heatmap-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.heatmap-stat-value.cyan { color: var(--accent-cyan); }
+.heatmap-stat-value.green { color: var(--accent-green); }
+.heatmap-stat-value.orange { color: var(--accent-orange); }
+.heatmap-stat-value.purple { color: var(--accent-purple); }
+.heatmap-stat-value.red { color: var(--accent-red); }
+.heatmap-stat-value.teal { color: var(--accent-teal); }
+
+.heatmap-controls {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.heatmap-control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.heatmap-control-row label {
+    min-width: 70px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.heatmap-control-row input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent-cyan);
+    height: 4px;
+    cursor: pointer;
+}
+
+.heatmap-control-row .val-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-cyan);
+    min-width: 32px;
+    text-align: right;
+}
+
+/* ── LIGHTBOX ── */
+.lightbox-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(8px);
+    z-index: 10000;
+    cursor: grab;
+    flex-direction: column;
+}
+
+.lightbox-overlay.active {
+    display: flex;
+}
+
+.lightbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: rgba(10, 14, 23, 0.9);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+    z-index: 2;
+}
+
+.lightbox-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    letter-spacing: 0.5px;
+}
+
+.lightbox-close {
+    background: rgba(248, 113, 113, 0.2);
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    color: var(--accent-red);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    transition: all 0.2s;
+}
+
+.lightbox-close:hover {
+    background: rgba(248, 113, 113, 0.4);
+}
+
+.lightbox-zoom-info {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: rgba(0,0,0,0.3);
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.lightbox-container {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.lightbox-container img {
+    max-width: none;
+    max-height: none;
+    transition: transform 0.1s ease-out;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.heatmap-placeholder-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    height: 100%;
+}
+
+.heatmap-placeholder-icon {
+    font-size: 48px;
+    opacity: 0.3;
+    animation: floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.heatmap-progress-bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(56, 189, 248, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    display: none;
+}
+
+.heatmap-progress-bar.active {
+    display: block;
+}
+
+.heatmap-progress-bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal));
+    width: 0%;
+    animation: progressPulse 2s ease-in-out infinite;
+    border-radius: 2px;
+}
+
+@keyframes progressPulse {
+    0% { width: 0%; }
+    50% { width: 70%; }
+    100% { width: 100%; }
+}
     </style>
 </head>
 <body>
@@ -643,12 +911,13 @@
         </section>
 
         <!-- ── SIDEBAR ── -->
-        <aside class="sidebar" style="display: flex; flex-direction: column; gap: 0; overflow: hidden;">
+        <aside class="sidebar">
             <!-- Tab Bar -->
             <div class="sidebar-tabs">
                 <button class="sidebar-tab active" data-tab="control">🎮 Control</button>
                 <button class="sidebar-tab" data-tab="status">📊 Status</button>
                 <button class="sidebar-tab" data-tab="config">⚙ Config</button>
+                <button class="sidebar-tab" data-tab="heatmaps">🗺 Heatmaps</button>
             </div>
             
             <!-- Tab Panels -->
@@ -676,51 +945,31 @@
                         </div>
                         <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;" id="recordStatus">Dataset frames: 0</div>
                     </div>
-                    
-                    <div class="ap-slider-row" style="margin-bottom: 12px;">
-                        <label>Manual Speed</label>
-                        <input type="range" id="manualSpeed" min="50" max="255" value="140" oninput="document.getElementById('valManualSpeed').textContent=this.value; sendManualCommand('speed?v=' + this.value);">
-                        <span class="ap-slider-val" id="valManualSpeed">140</span>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-items: center; justify-items: center; margin-bottom: 8px;">
-                        <div></div>
-                        <button onmousedown="sendManualCommand('forward')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">↑</button>
-                        <div></div>
-                        
-                        <button onmousedown="sendManualCommand('left')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">←</button>
-                        <button onmousedown="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(248, 113, 113, 0.2); border: 1px solid var(--accent-red); color: var(--accent-red); border-radius: 8px; cursor: pointer;">■</button>
-                        <button onmousedown="sendManualCommand('right')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">→</button>
-                        
-                        <div></div>
-                        <button onmousedown="sendManualCommand('reverse')" onmouseup="sendManualCommand('stop')" onmouseleave="sendManualCommand('stop')" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer;">↓</button>
-                        <div></div>
-                    </div>
                 </div>
-
+                    
                 <!-- ══════════════════════════════════════════════════════════ -->
-                <!--  AUTOPILOT CONTROL PANEL                                  -->
+                <!--  SEQUENCE CONTROL PANEL                                   -->
                 <!-- ══════════════════════════════════════════════════════════ -->
                 <div class="sidebar-section card" style="padding: 12px;">
                     <div class="card-header" style="margin: -12px -12px 12px -12px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;">
                         <div class="card-header-left">
                             <div class="card-icon controls" style="margin-right: 8px;">🤖</div>
-                            <span class="card-title">Autonomous Pilot</span>
+                            <span class="card-title">Sequence Controls</span>
                         </div>
                     </div>
 
-                                        <!-- Mission Controls -->
-                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                        <button id="btnAiModeToggle" onclick="toggleAiMode()" style="flex:1; padding: 6px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #a855f7; border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">?? AI DRIVING: OFF</button>
-                    </div>
+                    <!-- Sequence Controls -->
                     <div class="ap-controls">
-                        <button class="ap-btn ap-btn-start" id="btnStartMission" onclick="startMission()">▶ START</button>
+                        <button class="ap-btn ap-btn-start" id="btnStartMission" onclick="startMission()">▶ START SEQ</button>
                         <button class="ap-btn ap-btn-pause" id="btnPauseMission" onclick="pauseMission()">⏸ PAUSE</button>
-                        <button class="ap-btn ap-btn-stop" id="btnStopMission" onclick="stopMission()">■ STOP</button>
+                        <button class="ap-btn ap-btn-pause" id="btnResumeMission" onclick="resumeMission()">▶ RESUME</button>
+                    </div>
+                    <div class="ap-controls" style="margin-top: 8px;">
+                        <button class="ap-btn ap-btn-stop" id="btnStopMission" onclick="stopMission()">■ STOP SEQ</button>
                     </div>
 
                     <!-- Status -->
-                    <div class="ap-info-row">
+                    <div class="ap-info-row" style="margin-top: 12px;">
                         <span class="ap-info-label">State</span>
                         <span class="ap-state-badge ap-state-idle" id="autopilotState">IDLE</span>
                     </div>
@@ -728,19 +977,8 @@
                         <span class="ap-info-label">Rover</span>
                         <span class="ap-info-value" id="roverDetectStatus" style="color: #fb923c;">SEARCHING...</span>
                     </div>
-                    <div class="ap-info-row">
-                        <span class="ap-info-label">Progress</span>
-                        <span class="ap-info-value" id="autopilotProgress">WP 0 / 0 (0%)</span>
-                    </div>
-                    <div class="ap-info-row">
-                        <span class="ap-info-label">Heading</span>
-                        <span class="ap-info-value" id="autopilotHeading" style="color: var(--accent-teal);">---°</span>
-                    </div>
-                    <div class="ap-progress-track">
-                        <div class="ap-progress-fill" id="missionProgressBar"></div>
-                    </div>
-                    <div class="ap-direction-display" id="autopilotDirection">■ STOP</div>
-                    <div style="font-size: 11px; color: var(--text-secondary); text-align: center; min-height: 28px;" id="autopilotMessage">Waiting for mission start</div>
+                    <div class="ap-direction-display" id="autopilotDirection" style="font-size: 13px;">GEOFENCE ACTIVE</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); text-align: center; min-height: 28px;" id="autopilotMessage">Waiting for sequence start</div>
                     
                     <!-- ESP32 Status -->
                     <div class="ap-esp32-row">
@@ -748,6 +986,55 @@
                         <span style="font-size: 11px; color: var(--text-secondary);">ESP32:</span>
                         <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace;" id="esp32StatusText">Disconnected</span>
                     </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!--  SEQUENCE EDITOR PANEL                                    -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <div class="sidebar-section card" style="padding: 12px;">
+                    <div class="card-header" style="margin: -12px -12px 12px -12px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: space-between;">
+                        <div class="card-header-left">
+                            <div class="card-icon controls" style="margin-right: 8px;">📝</div>
+                            <span class="card-title">Sequence Editor</span>
+                        </div>
+                        <span id="seqVersionBadge" style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent-cyan); background: rgba(56,189,248,0.1); padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(56,189,248,0.2);">v0</span>
+                    </div>
+
+                    <!-- Sync Status Bar -->
+                    <div id="seqSyncBar" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; margin-bottom: 8px; background: rgba(15,23,42,0.5); border-radius: 6px; border: 1px solid rgba(56,189,248,0.06); font-size: 10px; font-family: 'JetBrains Mono', monospace;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div id="seqSyncDot" style="width: 6px; height: 6px; border-radius: 50%; background: #475569;"></div>
+                            <span id="seqSyncText" style="color: var(--text-muted);">Not uploaded</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <span id="seqLocalVer" style="color: var(--text-secondary);">Local: --</span>
+                            <span id="seqEsp32Ver" style="color: var(--text-muted);">ESP32: --</span>
+                        </div>
+                    </div>
+                    
+                    <div id="sequenceEditorContainer" style="max-height: 250px; overflow-y: auto; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 4px;">
+                        <table id="sequenceTable" style="width: 100%; border-collapse: collapse; font-size: 10px; font-family: 'JetBrains Mono', monospace; text-align: center;">
+                            <thead>
+                                <tr style="color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <th style="padding: 4px; width: 10%;">#</th>
+                                    <th style="padding: 4px; width: 25%;">PWM</th>
+                                    <th style="padding: 4px; width: 30%;">DIR</th>
+                                    <th style="padding: 4px; width: 25%;">ms</th>
+                                    <th style="padding: 4px; width: 10%;">Del</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sequenceTableBody">
+                                <!-- JS will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+                        <button onclick="addSequenceRow()" style="flex: 1; padding: 6px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold;">+ Add Step</button>
+                        <button onclick="resetSequenceToDefaults()" style="flex: 1; padding: 6px; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248,113,113,0.3); color: var(--accent-red); border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold;">↺ Reset Defaults</button>
+                    </div>
+                    <button id="btnUploadSeq" onclick="uploadSequence()" style="width: 100%; padding: 8px; background: var(--accent-green); color: #000; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">⬆ Upload to ESP32</button>
+                    <div id="uploadStatusMsg" style="font-size: 10px; text-align: center; margin-top: 4px; min-height: 14px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);"></div>
                 </div>
             </div>
             
@@ -845,17 +1132,8 @@
                             <span class="conn-label">Bottom-Right:</span>
                             <span class="conn-value orange" id="gridEndLabel">-- , --</span>
                         </div>
-                        <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                            <span class="conn-label">Grid Size:</span>
-                            <div style="display: flex; gap: 4px; align-items: center;">
-                                <input type="number" id="gridRowsInput" value="3" min="1" max="20" style="width:40px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:var(--text-primary); border-radius:4px; padding:2px; font-family:'JetBrains Mono',monospace; text-align:center;">
-                                <span style="color:var(--text-muted); font-size:10px;">x</span>
-                                <input type="number" id="gridColsInput" value="2" min="1" max="20" style="width:40px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:var(--text-primary); border-radius:4px; padding:2px; font-family:'JetBrains Mono',monospace; text-align:center;">
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                            <button id="btnGenerateGrid" style="flex:1; padding: 6px; background: var(--accent-cyan); color: #000; border: none; border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">Generate Grid</button>
-                            <button id="btnClearGrid" style="flex:1; padding: 6px; background: rgba(248, 113, 113, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">Clear Grid</button>
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                            <button id="btnClearBoundary" style="padding: 6px 12px; background: rgba(248, 113, 113, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); border-radius: 4px; font-weight: 600; font-size: 11px; cursor: pointer; font-family:'Inter', sans-serif;">Clear Boundary</button>
                         </div>
                         <div>
                             <span class="conn-label" style="display:block; margin-bottom: 4px;">Rover ESP32 IP:</span>
@@ -868,28 +1146,126 @@
                     </div>
                 </div>
 
-                <!-- ── AUTOPILOT PARAMETERS ── -->
-                <div class="sidebar-section card" style="padding: 12px;">
-                    <div class="card-header" style="margin: -12px -12px 12px -12px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;">
+                <!-- ── RUN ANALYSIS ── -->
+                <div class="card">
+                    <div class="card-header">
                         <div class="card-header-left">
-                            <div class="card-icon controls" style="margin-right: 8px;">⚙</div>
-                            <span class="card-title">Autopilot Parameters</span>
+                            <div class="card-icon system">🔬</div>
+                            <span class="card-title">Run Analysis</span>
                         </div>
                     </div>
-                    <div class="ap-slider-row">
-                        <label>Speed</label>
-                        <input type="range" id="sliderSpeed" min="50" max="255" value="140" oninput="document.getElementById('valSpeed').textContent=this.value; sendAutopilotConfig();">
-                        <span class="ap-slider-val" id="valSpeed">140</span>
+                    <div class="conn-info" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                        <button id="btnRunAnalysis" style="padding: 8px; background: var(--accent-orange); color: #000; border: none; border-radius: 4px; font-weight: 600; font-size: 12px; cursor: pointer; font-family:'Inter', sans-serif;">Run Analysis</button>
+                        <span id="analysisStatusMsg" style="font-size: 11px; color: var(--text-muted); text-align: center;">Waiting for Grid/Path...</span>
                     </div>
-                    <div class="ap-slider-row">
-                        <label>Arrival (px)</label>
-                        <input type="range" id="sliderArrival" min="10" max="100" value="30" oninput="document.getElementById('valArrival').textContent=this.value; sendAutopilotConfig();">
-                        <span class="ap-slider-val" id="valArrival">30</span>
+                </div>
+
+                <!-- ── START EXPLORING ── -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon controls">🚀</div>
+                            <span class="card-title">Exploration Sequence</span>
+                        </div>
                     </div>
-                    <div class="ap-slider-row">
-                        <label>Duration (ms)</label>
-                        <input type="range" id="sliderDuration" min="100" max="2000" value="400" step="50" oninput="document.getElementById('valDuration').textContent=this.value; sendAutopilotConfig();">
-                        <span class="ap-slider-val" id="valDuration">400</span>
+                    <div class="conn-info" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                        <button id="btnStartExploring" disabled style="padding: 10px; background: rgba(74,222,128,0.2); color: var(--accent-green); border: 1px solid var(--accent-green); border-radius: 4px; font-weight: 800; font-size: 14px; cursor: not-allowed; font-family:'Inter', sans-serif; opacity: 0.5;">START EXPLORING</button>
+                        <span id="exploreStatusMsg" style="font-size: 11px; color: var(--text-muted); text-align: center;">Requires Analysis Complete</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="tabHeatmaps" style="flex-direction: column; gap: 0; height: 100%; overflow: hidden;">
+                <!-- Header Bar -->
+                <div class="card" style="border-radius: 12px 12px 0 0; margin-bottom: 0; flex-shrink: 0;">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="card-header-left">
+                            <div class="card-icon controls">🗺</div>
+                            <span class="card-title">Terrain Analysis Dashboard</span>
+                        </div>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-secondary); cursor: pointer;">
+                                <input type="checkbox" id="heatmapEnhanceToggle" checked style="accent-color: var(--accent-cyan);">
+                                CLAHE
+                            </label>
+                            <button id="btnRegenerateHeatmap" style="padding: 4px 8px; background: var(--accent-cyan); color: #000; border: none; border-radius: 4px; font-weight: 600; font-size: 10px; cursor: pointer;">↻ Regenerate</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="heatmap-progress-bar" id="heatmapProgressBar"><div class="fill"></div></div>
+
+                <!-- Stats Bar -->
+                <div class="heatmap-stats-bar" id="heatmapStatsBar" style="display: none;">
+                    <div class="heatmap-stat">
+                        <div class="heatmap-stat-label">🧬 Bio-Sig</div>
+                        <div class="heatmap-stat-value green" id="hmStatBio">--%</div>
+                    </div>
+                    <div class="heatmap-stat">
+                        <div class="heatmap-stat-label">💧 Liquid</div>
+                        <div class="heatmap-stat-value cyan" id="hmStatLiquid">--%</div>
+                    </div>
+                    <div class="heatmap-stat">
+                        <div class="heatmap-stat-label">⚠ Anomalies</div>
+                        <div class="heatmap-stat-value orange" id="hmStatAnomalies">--</div>
+                    </div>
+                    <div class="heatmap-stat">
+                        <div class="heatmap-stat-label">⏱ Time</div>
+                        <div class="heatmap-stat-value purple" id="hmStatTime">--s</div>
+                    </div>
+                </div>
+
+                <!-- 4-Panel Grid OR Placeholder -->
+                <div id="heatmapGridContainer" style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column;">
+                    <!-- Placeholder -->
+                    <div id="heatmapPlaceholder" class="heatmap-placeholder-content">
+                        <div class="heatmap-placeholder-icon">🛰️</div>
+                        <div style="color: var(--text-secondary); font-size: 13px; font-weight: 600;">No Analysis Data</div>
+                        <div style="color: var(--text-muted); font-size: 11px; max-width: 220px;">Draw a boundary on the camera feed and click <strong style="color: var(--accent-orange);">Run Analysis</strong> in the Config tab.</div>
+                    </div>
+
+                    <!-- Grid (hidden initially) -->
+                    <div class="heatmap-grid" id="heatmapGrid" style="display: none;">
+                        <div class="heatmap-panel" data-key="elevation" onclick="openLightbox('elevation')">
+                            <div class="heatmap-panel-header">🌋 Elevation DEM</div>
+                            <img id="hmImgElevation" src="" alt="Elevation">
+                            <span class="zoom-hint">Click to zoom</span>
+                        </div>
+                        <div class="heatmap-panel" data-key="classification" onclick="openLightbox('classification')">
+                            <div class="heatmap-panel-header">🔬 Surface Classification</div>
+                            <img id="hmImgClassification" src="" alt="Classification">
+                            <span class="zoom-hint">Click to zoom</span>
+                        </div>
+                        <div class="heatmap-panel" data-key="life_liquid" onclick="openLightbox('life_liquid')">
+                            <div class="heatmap-panel-header">🧬 Bio / Liquid Scanner</div>
+                            <img id="hmImgLifeLiquid" src="" alt="Bio/Liquid">
+                            <span class="zoom-hint">Click to zoom</span>
+                        </div>
+                        <div class="heatmap-panel" data-key="overlay" onclick="openLightbox('overlay')">
+                            <div class="heatmap-panel-header">⚠ Anomaly Overlay</div>
+                            <img id="hmImgOverlay" src="" alt="Anomaly Overlay">
+                            <span class="zoom-hint">Click to zoom</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhancement Controls -->
+                <div class="heatmap-controls" id="heatmapControls" style="display: none; border-top: 1px solid rgba(56,189,248,0.08); background: rgba(10,14,23,0.6);">
+                    <div class="heatmap-control-row">
+                        <label>🔍 Zoom</label>
+                        <input type="range" id="hmZoomSlider" min="100" max="400" value="100" step="10">
+                        <span class="val-display" id="hmZoomVal">1.0×</span>
+                    </div>
+                    <div class="heatmap-control-row">
+                        <label>☀ Bright</label>
+                        <input type="range" id="hmBrightSlider" min="50" max="200" value="100" step="5">
+                        <span class="val-display" id="hmBrightVal">100%</span>
+                    </div>
+                    <div class="heatmap-control-row">
+                        <label>◐ Contrast</label>
+                        <input type="range" id="hmContrastSlider" min="50" max="250" value="100" step="5">
+                        <span class="val-display" id="hmContrastVal">100%</span>
                     </div>
                 </div>
             </div>
@@ -937,10 +1313,7 @@
         const gridToggle = document.getElementById('gridToggle');
         const gridStartLabel = document.getElementById('gridStartLabel');
         const gridEndLabel = document.getElementById('gridEndLabel');
-        const gridRowsInput = document.getElementById('gridRowsInput');
-        const gridColsInput = document.getElementById('gridColsInput');
-        const btnGenerateGrid = document.getElementById('btnGenerateGrid');
-        const btnClearGrid = document.getElementById('btnClearGrid');
+        const btnClearBoundary = document.getElementById('btnClearBoundary');
         const espIpInput = document.getElementById('espIpInput');
 
         // Tab switching
@@ -1561,75 +1934,23 @@
         }
 
         // ══════════════════════════════════════════════════
-        //  GRID GENERATION & RENDERING LOGIC
+        //  BOUNDARY RENDERING LOGIC
         // ══════════════════════════════════════════════════
 
-        btnGenerateGrid.onclick = () => {
-            if (!gridStart || !gridEnd) {
-                alert("Please draw the red boundary first (Enable 'Draw Boundary (Red)', click and drag).");
-                return;
-            }
-            const rows = parseInt(gridRowsInput.value) || 3;
-            const cols = parseInt(gridColsInput.value) || 2;
-            
-            const w = gridEnd.x - gridStart.x;
-            const h = gridEnd.y - gridStart.y;
-            const cellW = w / cols;
-            const cellH = h / rows;
-            
-            let cells = [];
-            let pathWaypoints = [];
-            
-            // Generate cells
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    cells.push({
-                        r: r, c: c,
-                        x: gridStart.x + c * cellW,
-                        y: gridStart.y + r * cellH,
-                        w: cellW, h: cellH
-                    });
-                }
-            }
-            
-            // Boustrophedon path generation (start bottom-left)
-            let order = 1;
-            for (let r = rows - 1; r >= 0; r--) {
-                const rowFromBottom = (rows - 1) - r;
-                const goRight = (rowFromBottom % 2 === 0);
-                
-                for (let i = 0; i < cols; i++) {
-                    const c = goRight ? i : (cols - 1 - i);
-                    const cellIndex = r * cols + c;
-                    const cell = cells[cellIndex];
-                    pathWaypoints.push({
-                        x: cell.x + cell.w / 2,
-                        y: cell.y + cell.h / 2,
-                        cellIdx: cellIndex,
-                        order: order++
-                    });
-                }
-            }
-            
-            terrainGridData = {
-                rows, cols, cells, pathWaypoints, cellW, cellH
-            };
-            
-            drawModeActive = false;
-            gridToggle.checked = false;
-            overlayCanvas.style.cursor = 'default';
-            overlayCanvas.style.pointerEvents = 'none';
-            log(`Generated ${cols}x${rows} terrain grid with full coverage path`, 'success');
-        };
-
-        btnClearGrid.onclick = () => {
+        btnClearBoundary.onclick = () => {
             terrainGridData = null;
             gridStart = null;
             gridEnd = null;
             currentGridEnd = null;
             gridStartLabel.textContent = `-- , --`;
             gridEndLabel.textContent = `-- , --`;
-            log('Grid cleared', 'info');
+            log('Boundary cleared', 'info');
+            
+            const analysisStatusMsg = document.getElementById('analysisStatusMsg');
+            if (analysisStatusMsg) {
+                analysisStatusMsg.textContent = "Waiting for Grid/Path...";
+                analysisStatusMsg.style.color = "var(--text-muted)";
+            }
         };
 
         function drawTerrainGridAndPath() {
@@ -1797,6 +2118,233 @@
             return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
         }
 
+        // ── SEQUENCE EDITOR (with persistence & versioning) ──
+        const DEFAULT_SEQUENCE = [
+            {pwm: 150, direction: "FORWARD", duration: 5000},
+            {pwm: 190, direction: "LEFT", duration: 620},
+            {pwm: 150, direction: "FORWARD", duration: 1600},
+            {pwm: 190, direction: "LEFT", duration: 625},
+            {pwm: 150, direction: "FORWARD", duration: 5000}
+        ];
+
+        let currentSequence = [];
+        let sequenceVersion = 0;
+        let esp32SequenceVersion = 0;
+        let esp32Synced = false;
+
+        // ── Load sequence from localStorage (or use defaults) ──
+        function loadSequenceFromStorage() {
+            try {
+                const saved = localStorage.getItem('agra_sequence');
+                const savedVer = localStorage.getItem('agra_sequence_version');
+                if (saved) {
+                    currentSequence = JSON.parse(saved);
+                    sequenceVersion = parseInt(savedVer) || 1;
+                    addLog(`[SEQ] Loaded saved sequence: ${currentSequence.length} steps, v${sequenceVersion}`);
+                } else {
+                    currentSequence = JSON.parse(JSON.stringify(DEFAULT_SEQUENCE));
+                    sequenceVersion = 1;
+                    saveSequenceToStorage();
+                    addLog('[SEQ] No saved sequence found, loaded defaults');
+                }
+            } catch (e) {
+                currentSequence = JSON.parse(JSON.stringify(DEFAULT_SEQUENCE));
+                sequenceVersion = 1;
+                addLog('[SEQ] Error loading sequence, using defaults');
+            }
+            updateSeqUI();
+        }
+
+        // ── Save sequence to localStorage ──
+        function saveSequenceToStorage() {
+            try {
+                localStorage.setItem('agra_sequence', JSON.stringify(currentSequence));
+                localStorage.setItem('agra_sequence_version', String(sequenceVersion));
+            } catch (e) {
+                console.error('Failed to save sequence:', e);
+            }
+        }
+
+        // ── Update version/sync UI ──
+        function updateSeqUI() {
+            const badge = document.getElementById('seqVersionBadge');
+            const syncDot = document.getElementById('seqSyncDot');
+            const syncText = document.getElementById('seqSyncText');
+            const localVer = document.getElementById('seqLocalVer');
+            const esp32Ver = document.getElementById('seqEsp32Ver');
+            if (badge) badge.textContent = `v${sequenceVersion}`;
+            if (localVer) localVer.textContent = `Local: v${sequenceVersion}`;
+            if (esp32Ver) esp32Ver.textContent = `ESP32: ${esp32SequenceVersion > 0 ? 'v' + esp32SequenceVersion : '--'}`;
+            if (syncDot && syncText) {
+                if (esp32SequenceVersion === 0) {
+                    syncDot.style.background = '#475569';
+                    syncText.textContent = 'Not uploaded';
+                    syncText.style.color = 'var(--text-muted)';
+                    esp32Synced = false;
+                } else if (esp32SequenceVersion === sequenceVersion) {
+                    syncDot.style.background = '#4ade80';
+                    syncDot.style.boxShadow = '0 0 6px rgba(74,222,128,0.5)';
+                    syncText.textContent = '✓ Synchronized';
+                    syncText.style.color = '#4ade80';
+                    esp32Synced = true;
+                } else {
+                    syncDot.style.background = '#fb923c';
+                    syncDot.style.boxShadow = '0 0 6px rgba(251,146,60,0.5)';
+                    syncText.textContent = '⚠ Out of Sync';
+                    syncText.style.color = '#fb923c';
+                    esp32Synced = false;
+                }
+            }
+        }
+
+        function renderSequenceTable() {
+            const tbody = document.getElementById('sequenceTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            currentSequence.forEach((step, idx) => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+                tr.innerHTML = `
+                    <td style="padding: 4px 0; color: var(--text-muted);">${idx}</td>
+                    <td style="padding: 4px 0;"><input type="number" value="${step.pwm}" min="0" max="255" style="width: 35px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: white; text-align: center; border-radius: 3px;" onchange="updateSequence(${idx}, 'pwm', this.value)"></td>
+                    <td style="padding: 4px 0;">
+                        <select style="width: 55px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: white; border-radius: 3px; font-size: 9px;" onchange="updateSequence(${idx}, 'direction', this.value)">
+                            <option value="FORWARD" ${step.direction==='FORWARD'?'selected':''}>FWD</option>
+                            <option value="REVERSE" ${step.direction==='REVERSE'?'selected':''}>REV</option>
+                            <option value="LEFT" ${step.direction==='LEFT'?'selected':''}>LFT</option>
+                            <option value="RIGHT" ${step.direction==='RIGHT'?'selected':''}>RGT</option>
+                        </select>
+                    </td>
+                    <td style="padding: 4px 0;"><input type="number" value="${step.duration}" step="10" min="0" style="width: 45px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: white; text-align: center; border-radius: 3px;" onchange="updateSequence(${idx}, 'duration', this.value)"></td>
+                    <td style="padding: 4px 0;"><button onclick="deleteSequenceRow(${idx})" style="background: transparent; color: #ef4444; border: none; cursor: pointer; font-size: 14px;">×</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateSequence(idx, field, val) {
+            if(field === 'pwm' || field === 'duration') val = parseInt(val);
+            currentSequence[idx][field] = val;
+            sequenceVersion++;
+            saveSequenceToStorage();
+            updateSeqUI();
+        }
+
+        function addSequenceRow() {
+            currentSequence.push({pwm: 150, direction: "FORWARD", duration: 1000});
+            sequenceVersion++;
+            saveSequenceToStorage();
+            renderSequenceTable();
+            updateSeqUI();
+        }
+
+        function deleteSequenceRow(idx) {
+            currentSequence.splice(idx, 1);
+            sequenceVersion++;
+            saveSequenceToStorage();
+            renderSequenceTable();
+            updateSeqUI();
+        }
+
+        function resetSequenceToDefaults() {
+            if (!confirm('Reset sequence to factory defaults? This will erase your current calibration.')) return;
+            currentSequence = JSON.parse(JSON.stringify(DEFAULT_SEQUENCE));
+            sequenceVersion = 1;
+            esp32SequenceVersion = 0;
+            saveSequenceToStorage();
+            renderSequenceTable();
+            updateSeqUI();
+            addLog('[SEQ] Sequence reset to defaults');
+        }
+
+        function setUploadStatus(msg, color) {
+            const el = document.getElementById('uploadStatusMsg');
+            if (el) { el.textContent = msg; el.style.color = color || 'var(--text-muted)'; }
+        }
+
+        function uploadSequence() {
+            if (!autopilotWs || autopilotWs.readyState !== WebSocket.OPEN) {
+                addLog('[ERROR] Not connected to backend server.', 'error');
+                setUploadStatus('✗ Not connected to server', '#f87171');
+                return;
+            }
+            // Save locally first to ensure persistence
+            saveSequenceToStorage();
+            // Disable button during upload
+            const btn = document.getElementById('btnUploadSeq');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Uploading...'; btn.style.opacity = '0.6'; }
+            setUploadStatus('Uploading to ESP32...', 'var(--accent-cyan)');
+            autopilotWs.send(JSON.stringify({
+                type: 'upload_sequence',
+                sequence: currentSequence,
+                version: sequenceVersion,
+                esp32_ip: document.getElementById('espIpInput')?.value || ''
+            }));
+            addLog(`[SEQ] Uploading sequence (${currentSequence.length} steps, v${sequenceVersion})...`);
+        }
+
+        // ── Handle upload result from backend ──
+        function handleUploadResult(data) {
+            const btn = document.getElementById('btnUploadSeq');
+            if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload to ESP32'; btn.style.opacity = '1'; }
+            const btnStartExploring = document.getElementById('btnStartExploring');
+            const exploreStatusMsg = document.getElementById('exploreStatusMsg');
+            
+            if (data.ok) {
+                esp32SequenceVersion = data.esp32_version || data.version || sequenceVersion;
+                updateSeqUI();
+                const verifiedStr = data.verified ? ', verified ✓' : '';
+                setUploadStatus(`✓ Uploaded: ${data.esp32_steps || data.steps_sent} steps, v${esp32SequenceVersion}${verifiedStr}`, '#4ade80');
+                addLog(`[SEQ] ✓ Upload confirmed: ${data.esp32_steps || data.steps_sent} steps, v${esp32SequenceVersion}${verifiedStr}`);
+                
+                // Trigger start_mission for Exploration Workflow
+                if (btnStartExploring && btnStartExploring.textContent === "UPLOADING...") {
+                    btnStartExploring.textContent = "EXPLORING";
+                    btnStartExploring.style.background = "rgba(74,222,128,0.5)";
+                    exploreStatusMsg.textContent = "Rover is executing sequence.";
+                    
+                    let gridConfig = null;
+                    if (gridStart && gridEnd) {
+                        gridConfig = {
+                            x1: Math.round(gridStart.x),
+                            y1: Math.round(gridStart.y),
+                            x2: Math.round(gridEnd.x),
+                            y2: Math.round(gridEnd.y)
+                        };
+                    }
+                    
+                    autopilotWs.send(JSON.stringify({
+                        type: 'start_mission',
+                        grid_config: gridConfig,
+                        esp32_ip: document.getElementById('espIpInput')?.value || '',
+                        waypoints: null
+                    }));
+                    addLog("[EXPLORE] Sequence started with boundary!");
+                }
+            } else {
+                setUploadStatus(`✗ Failed: ${data.error || 'Unknown error'}`, '#f87171');
+                addLog(`[SEQ] ✗ Upload failed: ${data.error || 'Unknown error'}`, 'error');
+                if (btnStartExploring && btnStartExploring.textContent === "UPLOADING...") {
+                    btnStartExploring.disabled = false;
+                    btnStartExploring.textContent = "START EXPLORING";
+                    exploreStatusMsg.textContent = "Upload failed. Try again.";
+                    exploreStatusMsg.style.color = "var(--accent-red)";
+                }
+            }
+        }
+
+        function handleSequenceStatus(data) {
+            if (data.esp32_version !== undefined) {
+                esp32SequenceVersion = data.esp32_version;
+            }
+            updateSeqUI();
+        }
+
+        // ── BOOTSTRAP ──
+        // Load persisted sequence immediately
+        loadSequenceFromStorage();
+        renderSequenceTable();
+
         overlayCanvas.addEventListener('mousedown', (e) => {
             if (!drawModeActive) return;
             const pos = getMousePos(overlayCanvas, e);
@@ -1823,7 +2371,14 @@
             gridStart = {x: tX, y: tY}; gridEnd = {x: bX, y: bY};
             gridStartLabel.textContent = `${Math.round(tX)} , ${Math.round(tY)}`;
             gridEndLabel.textContent = `${Math.round(bX)} , ${Math.round(bY)}`;
-            log(`Grid set: (${Math.round(tX)},${Math.round(tY)}) -> (${Math.round(bX)},${Math.round(bY)})`, 'success');
+            log(`Boundary set: (${Math.round(tX)},${Math.round(tY)}) -> (${Math.round(bX)},${Math.round(bY)})`, 'success');
+            
+            // Enable analysis step
+            const analysisStatusMsg = document.getElementById('analysisStatusMsg');
+            if (analysisStatusMsg) {
+                analysisStatusMsg.textContent = "Ready for Analysis";
+                analysisStatusMsg.style.color = "var(--accent-green)";
+            }
         });
 
         overlayCanvas.addEventListener('mouseleave', (e) => {
@@ -1888,8 +2443,55 @@ function connectAutopilotWS() {
     autopilotWs.onmessage = (e) => {
         try {
             const data = JSON.parse(e.data);
+            if (data.type === 'upload_result') {
+                handleUploadResult(data);
+                return;
+            }
+            if (data.type === 'sequence_status') {
+                handleSequenceStatus(data);
+                return;
+            }
             if (data.type === 'ack') {
                 addLog(`[ACK] ${data.msg}`);
+                return;
+            }
+            if (data.type === 'analysis_complete') {
+                const btnRunAnalysis = document.getElementById('btnRunAnalysis');
+                const analysisStatusMsg = document.getElementById('analysisStatusMsg');
+                const btnStartExploring = document.getElementById('btnStartExploring');
+                const exploreStatusMsg = document.getElementById('exploreStatusMsg');
+                if (btnRunAnalysis) {
+                    btnRunAnalysis.disabled = false;
+                    btnRunAnalysis.textContent = "Analysis Complete";
+                    btnRunAnalysis.style.background = "var(--accent-green)";
+                    analysisStatusMsg.textContent = "Results ready!";
+                    analysisStatusMsg.style.color = "var(--accent-green)";
+                    
+                    analysisComplete = true;
+                    btnStartExploring.disabled = false;
+                    btnStartExploring.style.cursor = "pointer";
+                    btnStartExploring.style.opacity = "1";
+                    exploreStatusMsg.textContent = "Ready to explore.";
+                    exploreStatusMsg.style.color = "var(--accent-green)";
+                }
+                
+                // Hide progress bar
+                document.getElementById('heatmapProgressBar').classList.remove('active');
+                
+                showHeatmapsOverlay(data.heatmaps, data.stats);
+                addLog(`[ANALYSIS] Complete. Life: ${data.stats.life_percent}%, Liquid: ${data.stats.liquid_percent}%, Anomalies: ${data.stats.anomaly_count}/${data.stats.total_patches}`);
+                return;
+            }
+            if (data.type === 'analysis_error') {
+                const btnRunAnalysis = document.getElementById('btnRunAnalysis');
+                const analysisStatusMsg = document.getElementById('analysisStatusMsg');
+                if (btnRunAnalysis) {
+                    btnRunAnalysis.disabled = false;
+                    btnRunAnalysis.textContent = "Run Analysis";
+                    analysisStatusMsg.textContent = "Error: " + data.msg;
+                    analysisStatusMsg.style.color = "var(--accent-red)";
+                }
+                addLog(`[ANALYSIS] Error: ${data.msg}`, 'error');
                 return;
             }
             updateAutopilotUI(data);
@@ -1936,28 +2538,308 @@ function toggleAiMode() {
         autopilotWs.send(JSON.stringify({ type: 'set_ai_mode', enabled: aiModeActive }));
     }
 }
+
+// ══════════════════════════════════════════════════
+//  NEW WORKFLOW LOGIC (Analysis & Exploring)
+// ══════════════════════════════════════════════════
+let analysisComplete = false;
+
+document.getElementById('btnRunAnalysis').onclick = () => {
+    if (!gridStart || !gridEnd) {
+        alert("Please draw the boundary first!");
+        return;
+    }
+    if (!autopilotWs || autopilotWs.readyState !== WebSocket.OPEN) {
+        alert("Backend not connected.");
+        return;
+    }
+    
+    const btnRunAnalysis = document.getElementById('btnRunAnalysis');
+    const analysisStatusMsg = document.getElementById('analysisStatusMsg');
+    
+    btnRunAnalysis.disabled = true;
+    btnRunAnalysis.textContent = "Processing...";
+    analysisStatusMsg.textContent = "Running final.ipynb models...";
+    analysisStatusMsg.style.color = "var(--accent-orange)";
+    
+    const r = getVideoRect();
+    if (!r) {
+        alert("Video feed not available. Please start the camera.");
+        btnRunAnalysis.disabled = false;
+        btnRunAnalysis.textContent = "Run Analysis";
+        return;
+    }
+    
+    const sx = video.videoWidth / r.w;
+    const sy = video.videoHeight / r.h;
+    
+    // Show progress bar
+    document.getElementById('heatmapProgressBar').classList.add('active');
+    
+    const enhance = document.getElementById('heatmapEnhanceToggle')?.checked ?? true;
+    
+    autopilotWs.send(JSON.stringify({ 
+        type: 'run_analysis',
+        enhance: enhance,
+        boundary: {
+            x1: Math.round(Math.max(0, (gridStart.x - r.x) * sx)),
+            y1: Math.round(Math.max(0, (gridStart.y - r.y) * sy)),
+            x2: Math.round(Math.min(video.videoWidth, (gridEnd.x - r.x) * sx)),
+            y2: Math.round(Math.min(video.videoHeight, (gridEnd.y - r.y) * sy))
+        }
+    }));
+    addLog("[ANALYSIS] Analysis requested" + (enhance ? " (CLAHE enhanced)" : "") + "...");
+};
+
+document.getElementById('btnRegenerateHeatmap').onclick = () => {
+    const btn = document.getElementById('btnRunAnalysis');
+    if (btn) btn.click();
+};
+
+document.getElementById('btnStartExploring').onclick = () => {
+    if (!analysisComplete) return;
+    if (!autopilotWs || autopilotWs.readyState !== WebSocket.OPEN) {
+        alert("Backend disconnected.");
+        return;
+    }
+    
+    const btnStartExploring = document.getElementById('btnStartExploring');
+    const exploreStatusMsg = document.getElementById('exploreStatusMsg');
+    
+    btnStartExploring.disabled = true;
+    btnStartExploring.textContent = "UPLOADING...";
+    exploreStatusMsg.textContent = "Uploading sequence to ESP32...";
+    exploreStatusMsg.style.color = "var(--accent-cyan)";
+    
+    // 1. Save and upload sequence first
+    saveSequenceToStorage();
+    autopilotWs.send(JSON.stringify({
+        type: 'upload_sequence',
+        sequence: currentSequence,
+        version: sequenceVersion,
+        esp32_ip: document.getElementById('espIpInput')?.value || ''
+    }));
+    
+    // Note: Start will be triggered automatically when upload_result is received.
+    addLog("[EXPLORE] Uploading exploration sequence...");
+};
+
+// Store heatmap URLs globally for lightbox
+let currentHeatmapUrls = {};
+const heatmapTitles = {
+    elevation: '🌋 Elevation DEM',
+    classification: '🔬 Surface Classification',
+    life_liquid: '🧬 Bio / Liquid Scanner',
+    overlay: '⚠ Anomaly Overlay'
+};
+
+function showHeatmapsOverlay(heatmapsUrls, stats) {
+    addLog(`[ANALYSIS] Rendering 4-panel heatmap dashboard.`);
+    currentHeatmapUrls = heatmapsUrls;
+    
+    // Switch to Heatmaps tab
+    document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    
+    const heatmapsTab = document.querySelector('.sidebar-tab[data-tab="heatmaps"]');
+    if (heatmapsTab) heatmapsTab.classList.add('active');
+    
+    const tabHeatmapsPanel = document.getElementById('tabHeatmaps');
+    if (tabHeatmapsPanel) tabHeatmapsPanel.classList.add('active');
+    
+    // Show grid, hide placeholder
+    document.getElementById('heatmapPlaceholder').style.display = 'none';
+    document.getElementById('heatmapGrid').style.display = 'grid';
+    document.getElementById('heatmapStatsBar').style.display = 'grid';
+    document.getElementById('heatmapControls').style.display = 'flex';
+    
+    // Cache-bust timestamp
+    const t = new Date().getTime();
+    
+    // Load individual panel images
+    const panelMap = {
+        elevation: 'hmImgElevation',
+        classification: 'hmImgClassification',
+        life_liquid: 'hmImgLifeLiquid',
+        overlay: 'hmImgOverlay'
+    };
+    
+    for (const [key, imgId] of Object.entries(panelMap)) {
+        const img = document.getElementById(imgId);
+        if (img && heatmapsUrls[key]) {
+            img.src = heatmapsUrls[key] + '?t=' + t;
+        }
+    }
+    
+    // Update stats bar
+    if (stats) {
+        document.getElementById('hmStatBio').textContent = stats.life_percent.toFixed(1) + '%';
+        document.getElementById('hmStatLiquid').textContent = stats.liquid_percent.toFixed(1) + '%';
+        document.getElementById('hmStatAnomalies').textContent = stats.anomaly_count + '/' + stats.total_patches;
+        document.getElementById('hmStatTime').textContent = stats.processing_time.toFixed(2) + 's';
+    }
+}
+
+// ══════════════════════════════════════════════════
+//  HEATMAP ENHANCEMENT CONTROLS
+// ══════════════════════════════════════════════════
+
+function applyHeatmapFilters() {
+    const zoom = (document.getElementById('hmZoomSlider')?.value || 100) / 100;
+    const bright = document.getElementById('hmBrightSlider')?.value || 100;
+    const contrast = document.getElementById('hmContrastSlider')?.value || 100;
+    
+    document.getElementById('hmZoomVal').textContent = zoom.toFixed(1) + '×';
+    document.getElementById('hmBrightVal').textContent = bright + '%';
+    document.getElementById('hmContrastVal').textContent = contrast + '%';
+    
+    const grid = document.getElementById('heatmapGrid');
+    if (grid) {
+        grid.style.transform = `scale(${zoom})`;
+        grid.style.transformOrigin = 'top left';
+        grid.querySelectorAll('img').forEach(img => {
+            img.style.filter = `brightness(${bright}%) contrast(${contrast}%)`;
+        });
+    }
+}
+
+document.getElementById('hmZoomSlider')?.addEventListener('input', applyHeatmapFilters);
+document.getElementById('hmBrightSlider')?.addEventListener('input', applyHeatmapFilters);
+document.getElementById('hmContrastSlider')?.addEventListener('input', applyHeatmapFilters);
+
+// ══════════════════════════════════════════════════
+//  LIGHTBOX — Fullscreen Zoom & Pan
+// ══════════════════════════════════════════════════
+
+let lightboxZoom = 1;
+let lightboxPan = { x: 0, y: 0 };
+let lightboxDragging = false;
+let lightboxDragStart = { x: 0, y: 0 };
+
+function openLightbox(key) {
+    const url = currentHeatmapUrls[key];
+    if (!url) return;
+    
+    let overlay = document.getElementById('lightboxOverlay');
+    if (!overlay) {
+        // Create lightbox DOM on first use
+        overlay = document.createElement('div');
+        overlay.id = 'lightboxOverlay';
+        overlay.className = 'lightbox-overlay';
+        overlay.innerHTML = `
+            <div class="lightbox-header">
+                <span class="lightbox-title" id="lightboxTitle"></span>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="lightbox-zoom-info" id="lightboxZoomInfo">1.0×</span>
+                    <button class="lightbox-close" id="lightboxCloseBtn">✕ Close</button>
+                </div>
+            </div>
+            <div class="lightbox-container" id="lightboxContainer">
+                <img id="lightboxImg" src="" draggable="false">
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        // Close button
+        document.getElementById('lightboxCloseBtn').onclick = closeLightbox;
+        
+        // Click backdrop to close (only if clicking the container, not the image)
+        document.getElementById('lightboxContainer').addEventListener('dblclick', (e) => {
+            // Reset zoom on double click
+            lightboxZoom = 1;
+            lightboxPan = { x: 0, y: 0 };
+            updateLightboxTransform();
+        });
+        
+        // Mouse wheel zoom
+        document.getElementById('lightboxContainer').addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.2 : 0.2;
+            lightboxZoom = Math.max(0.5, Math.min(8, lightboxZoom + delta));
+            updateLightboxTransform();
+        });
+        
+        // Drag to pan
+        const container = document.getElementById('lightboxContainer');
+        container.addEventListener('mousedown', (e) => {
+            lightboxDragging = true;
+            lightboxDragStart = { x: e.clientX - lightboxPan.x, y: e.clientY - lightboxPan.y };
+            container.style.cursor = 'grabbing';
+        });
+        
+        window.addEventListener('mousemove', (e) => {
+            if (!lightboxDragging) return;
+            lightboxPan.x = e.clientX - lightboxDragStart.x;
+            lightboxPan.y = e.clientY - lightboxDragStart.y;
+            updateLightboxTransform();
+        });
+        
+        window.addEventListener('mouseup', () => {
+            lightboxDragging = false;
+            const container = document.getElementById('lightboxContainer');
+            if (container) container.style.cursor = 'grab';
+        });
+        
+        // Escape key
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+    }
+    
+    // Reset state
+    lightboxZoom = 1;
+    lightboxPan = { x: 0, y: 0 };
+    
+    // Apply current enhancement filters
+    const bright = document.getElementById('hmBrightSlider')?.value || 100;
+    const contrast = document.getElementById('hmContrastSlider')?.value || 100;
+    
+    const img = document.getElementById('lightboxImg');
+    img.src = url + '?t=' + new Date().getTime();
+    img.style.filter = `brightness(${bright}%) contrast(${contrast}%)`;
+    img.style.maxWidth = '90vw';
+    img.style.maxHeight = '85vh';
+    
+    document.getElementById('lightboxTitle').textContent = heatmapTitles[key] || key;
+    
+    overlay.classList.add('active');
+    updateLightboxTransform();
+}
+
+function closeLightbox() {
+    const overlay = document.getElementById('lightboxOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+function updateLightboxTransform() {
+    const img = document.getElementById('lightboxImg');
+    if (img) {
+        img.style.transform = `translate(${lightboxPan.x}px, ${lightboxPan.y}px) scale(${lightboxZoom})`;
+    }
+    const info = document.getElementById('lightboxZoomInfo');
+    if (info) info.textContent = lightboxZoom.toFixed(1) + '×';
+}
+
 function startMission() {
     const esp32Ip = document.getElementById('espIpInput')?.value || '';
     if (!esp32Ip) {
-        addLog('[ERROR] Please enter ESP32 IP address first');
-        alert('Please enter the ESP32 IP address in the Terrain Grid section');
+        addLog('[ERROR] Please enter ESP32 IP address in Config tab first');
+        alert('Please enter the ESP32 IP address in the Config tab');
         return;
     }
 
-    if (!gridStart || !gridEnd) {
-        addLog('[ERROR] Please draw a grid boundary first');
-        alert('Please draw a grid boundary first using the Terrain Grid Generator');
-        return;
+    // Grid is optional — only include if drawn
+    let gridConfig = null;
+    if (gridStart && gridEnd) {
+        gridConfig = {
+            x1: Math.round(gridStart.x),
+            y1: Math.round(gridStart.y),
+            x2: Math.round(gridEnd.x),
+            y2: Math.round(gridEnd.y),
+            rows: parseInt(document.getElementById('gridRowsInput')?.value || '5'),
+            cols: parseInt(document.getElementById('gridColsInput')?.value || '5'),
+        };
     }
-
-    const gridConfig = {
-        x1: Math.round(gridStart.x),
-        y1: Math.round(gridStart.y),
-        x2: Math.round(gridEnd.x),
-        y2: Math.round(gridEnd.y),
-        rows: parseInt(document.getElementById('gridRowsInput')?.value || '5'),
-        cols: parseInt(document.getElementById('gridColsInput')?.value || '5'),
-    };
 
     if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
         autopilotWs.send(JSON.stringify({
@@ -1966,7 +2848,9 @@ function startMission() {
             esp32_ip: esp32Ip,
             waypoints: terrainGridData ? terrainGridData.pathWaypoints : null
         }));
-        addLog(`[MISSION] Starting mission: ${gridConfig.rows}x${gridConfig.cols} grid`);
+        addLog(`[SEQ] Starting sequence on ESP32 (${esp32Ip})`);
+    } else {
+        addLog('[ERROR] Not connected to backend', 'error');
     }
 }
 
@@ -1982,24 +2866,12 @@ function stopMission() {
     }
 }
 
-function sendAutopilotConfig() {
-    const config = {
-        speed: parseInt(document.getElementById('sliderSpeed')?.value || '140'),
-        arrival_threshold: parseInt(document.getElementById('sliderArrival')?.value || '30'),
-        command_duration_ms: parseInt(document.getElementById('sliderDuration')?.value || '400'),
-    };
+function resumeMission() {
     if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
-        autopilotWs.send(JSON.stringify({ type: 'update_config', config }));
+        autopilotWs.send(JSON.stringify({ type: 'resume_mission' }));
     }
 }
 
-function sendManualCommand(cmd) {
-    if (autopilotWs && autopilotWs.readyState === WebSocket.OPEN) {
-        autopilotWs.send(JSON.stringify({ type: 'manual_override', command: cmd }));
-    } else {
-        console.warn("WebSocket not connected. Cannot send manual command.");
-    }
-}
 
 // ── Update UI from telemetry ──
 
@@ -2011,45 +2883,29 @@ function updateAutopilotUI(data) {
         stateEl.className = 'ap-state-badge ap-state-' + (data.state || 'idle').toLowerCase();
     }
 
-    // Waypoint progress
-    const progEl = document.getElementById('autopilotProgress');
-    if (progEl) {
-        progEl.textContent = `WP ${data.current_waypoint_index || 0} / ${data.total_waypoints || 0} (${data.progress_percent || 0}%)`;
-    }
-
-    // Direction
+    // Direction (Geofence status)
     const dirEl = document.getElementById('autopilotDirection');
     if (dirEl) {
-        const dir = (data.direction || 'stop').toUpperCase();
-        const arrows = { FORWARD: '↑', REVERSE: '↓', LEFT: '←', RIGHT: '→', STOP: '■' };
-        dirEl.textContent = `${arrows[dir] || '■'} ${dir}`;
+        dirEl.textContent = data.geofence_active ? (data.out_of_bounds ? 'GEOFENCE ALERT!' : 'GEOFENCE ACTIVE') : 'GEOFENCE INACTIVE';
+        dirEl.style.color = data.out_of_bounds ? '#ef4444' : '#4ade80';
     }
-
-    // Heading
-    const headEl = document.getElementById('autopilotHeading');
-    if (headEl) {
-        if (data.heading !== undefined && data.heading !== null) {
-            headEl.textContent = `${Math.round(data.heading)}°`;
-        } else {
-            headEl.textContent = '---°';
-        }
-    }
-
-    // Message
-    const msgEl = document.getElementById('autopilotMessage');
-    if (msgEl) msgEl.textContent = data.message || '';
-
-    // ESP32 status
-    const dotEl = document.getElementById('esp32StatusDot');
-    const txtEl = document.getElementById('esp32StatusText');
-    if (dotEl) dotEl.style.background = data.esp32_connected ? '#4ade80' : '#f87171';
-    if (txtEl) txtEl.textContent = data.esp32_connected ? 'Connected' : 'Disconnected';
 
     // Rover detection
     const roverEl = document.getElementById('roverDetectStatus');
     if (roverEl) {
-        roverEl.textContent = data.rover_detected ? 'LOCKED' : 'SEARCHING...';
-        roverEl.style.color = data.rover_detected ? '#4ade80' : '#fb923c';
+        const detected = data.position !== null;
+        roverEl.textContent = detected ? 'LOCKED' : 'SEARCHING...';
+        roverEl.style.color = detected ? '#4ade80' : '#fb923c';
+    }
+
+    // Out of bounds alert logic
+    const outOfBoundsAlert = document.getElementById('outOfBoundsAlert');
+    if (outOfBoundsAlert) {
+        if (data.out_of_bounds) {
+            outOfBoundsAlert.style.display = 'block';
+        } else {
+            outOfBoundsAlert.style.display = 'none';
+        }
     }
 
     // Progress bar
@@ -2230,6 +3086,13 @@ setInterval(() => {
 }, 100);
 
     
+// -- MANUAL ESP32 COMMANDS --
+function sendManualCommand(cmd) {
+    const esp32Ip = document.getElementById('espIpInput')?.value || '';
+    if (!esp32Ip) return;
+    fetch(`http://${esp32Ip}/${cmd}`, { mode: 'cors' }).catch(() => {});
+}
+
 // -- KEYBOARD MANUAL CONTROLS --
 let activeKey = null;
 

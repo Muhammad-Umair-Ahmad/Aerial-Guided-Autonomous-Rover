@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  telemetry-server:
+    build: .
+    image: rover-recon-analyzer:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/workspace/app
+      - ./input:/workspace/input
+      - ./output:/workspace/output
+    command: python app/telemetry_server.py

@@ -88,6 +88,10 @@ class ObjectDetector:
 
             img_data = base64.b64decode(base64_img)
             nparr    = np.frombuffer(img_data, np.uint8)
+            
+            if nparr.size == 0:
+                return {"error": "Empty image buffer", "detections": []}
+                
             img      = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
             if img is None:
@@ -246,6 +250,10 @@ class ObjectDetector:
 
             img_data = base64.b64decode(base64_img)
             nparr    = np.frombuffer(img_data, np.uint8)
+            
+            if nparr.size == 0:
+                return {"error": "Empty image buffer", "lines": []}
+                
             img      = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
             if img is None:
